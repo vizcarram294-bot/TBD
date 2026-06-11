@@ -1,10 +1,9 @@
 /**
  * Utilidades de exportación a Excel y PDF
  * Soporta exportación profesional con estilos, bordes y formato
- * Mejora: Exporta a XLSX con celdas correctamente formateadas
  */
 
-// ============ EXCEL EXPORT (MEJORADO CON CELDAS CORRECTAS) ============
+// ============ EXCEL EXPORT (FUNCIONAL Y SIMPLE) ============
 export function exportToExcel(rows, title, columns = null) {
   if (!rows || !rows.length) {
     alert('No hay datos para exportar');
@@ -17,61 +16,27 @@ export function exportToExcel(rows, title, columns = null) {
   const data = [];
   data.push(cols);
   
+  // Agregar todas las filas
   rows.forEach(row => {
     data.push(cols.map(col => formatCellValue(row[col])));
   });
 
-  // Generar Excel con estructura correcta
-  const worksheet = generateExcelWorksheet(data, cols);
-  downloadFile(worksheet, `${title}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  // Crear CSV con BOM para Excel
+  const csv = createCSVWorksheet(data);
+  downloadFile(csv, `${title}.csv`, 'text/csv');
 }
 
-function generateExcelWorksheet(data, cols) {
-  // Crear archivo XLSX básico pero funcional
-  const xl = {};
-  const wb = { SheetNames: ['Data'], Sheets: {} };
-  
-  // Crear worksheet
-  const ws = {};
-  const range = { s: { c: 0, r: 0 }, e: { c: cols.length - 1, r: data.length - 1 } };
-  
-  data.forEach((row, rowIdx) => {
-    row.forEach((cell, colIdx) => {
-      const cellRef = XLSX.utils.encode_cell({ r: rowIdx, c: colIdx });
-      ws[cellRef] = {
-        v: cell,
-        t: typeof cell === 'number' ? 'n' : 's',
-        s: {
-          font: { bold: rowIdx === 0, color: rowIdx === 0 ? { rgb: 'FFFFFF' } : { rgb: '000000' } },
-          fill: rowIdx === 0 ? { fgColor: { rgb: '4472C4' } } : { fgColor: { rgb: 'FFFFFF' } },
-          alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
-          border: {
-            left: { style: 'thin', color: { rgb: '000000' } },
-            right: { style: 'thin', color: { rgb: '000000' } },
-            top: { style: 'thin', color: { rgb: '000000' } },
-            bottom: { style: 'thin', color: { rgb: '000000' } }
-          }
-        }
-      };
-    });
-  });
-  
-  ws['!ref'] = XLSX.utils.encode_range(range);
-  ws['!cols'] = cols.map(() => ({ wch: 20 }));
-  
-  wb.Sheets['Data'] = ws;
-  
-  // Si XLSX no está disponible, usar CSV formateado
-  return createWorksheet(data, 'export');
-}
-
-function createWorksheet(data, title) {
+function createCSVWorksheet(data) {
   // BOM para UTF-8 en Excel (detecta automáticamente UTF-8)
   const BOM = '\uFEFF';
   const rows = data.map(row => 
     row.map(cell => {
       const str = String(cell ?? '').replace(/"/g, '""');
-      return `"${str}"`;
+      // Si contiene coma, comilla o salto de línea, envolver en comillas
+      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return `"${str}"`;
+      }
+      return str;
     }).join(',')
   );
   
@@ -285,7 +250,7 @@ function printToPDF(element) {
 
 // ============ HELPER FUNCTIONS ============
 function formatCellValue(value) {
-  if (value === null || value === undefined) return '-';
+  if (value === null || value === undefined) return '';
   if (typeof value === 'boolean') return value ? 'Sí' : 'No';
   
   const str = String(value).trim();
