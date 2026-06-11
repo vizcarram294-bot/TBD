@@ -3,6 +3,7 @@ import { create, details, list, remove, update } from '../api.js';
 import ModalForm from './ModalForm.jsx';
 import DetailModal from './DetailModal.jsx';
 import { canDo } from '../permissions.js';
+import { exportToExcel, exportToPDF, copyToClipboard } from '../utils/exportUtils.js';
 
 function visibleColumns(rows, id, resourceKey) {
   const cols = rows?.[0] ? Object.keys(rows[0]) : [];
@@ -19,15 +20,45 @@ function isDateColumn(col) {
   return /(^fecha$|fecha_|_fecha|ultimo_login|fecha_intento)/i.test(String(col || ''));
 }
 
-function formatDateText(value) {
+function isDateOnlyColumn(col) {
+  // Detecta si una columna debe mostrar solo fecha (sin hora)
+  return /(fecha_|_fecha|fecha$)/.test(String(col || '')) && !/(intento|creacion|modificacion|login)/.test(String(col || ''));
+}
+
+function formatDateText(value, isDateOnly = false) {
   if (!value) return '';
   const raw = String(value);
+  
+  // Formato YYYY-MM-DD (solo fecha)
   if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
     const [y,m,d] = raw.split('-');
     return `${d}/${m}/${y}`;
   }
+  
+  // Formato YYYY-MM-DD HH:MM (con hora)
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(raw)) {
+    if (isDateOnly) {
+      // Mostrar solo fecha
+      const [datePart] = raw.split('T');
+      const [y,m,d] = datePart.split('-');
+      return `${d}/${m}/${y}`;
+    }
+    // Mostrar fecha y hora
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return raw;
+    return date.toLocaleString('es-BO', {
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+    });
+  }
+  
+  // Intentar parsear como fecha normal
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return raw;
+  
+  if (isDateOnly) {
+    return date.toLocaleDateString('es-BO');
+  }
   return date.toLocaleString('es-BO', {
     year: 'numeric', month: '2-digit', day: '2-digit',
     hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
@@ -47,22 +78,10 @@ function compactText(value) {
 }
 
 function formatCell(col, value) {
-  const text = isDateColumn(col) ? formatDateText(value) : compactText(value);
+  const isDateOnly = isDateOnlyColumn(col);
+  const text = isDateColumn(col) ? formatDateText(value, isDateOnly) : compactText(value);
   const isLong = String(col).startsWith('datos_') || String(text).length > 70;
   return <span className={isLong ? 'cell-text cell-long' : 'cell-text'} title={String(text)}>{String(text).length > 120 ? `${String(text).slice(0, 120)}...` : text}</span>;
-}
-
-function exportCsv(rows, title) {
-  if (!rows.length) return;
-  const cols = Object.keys(rows[0]);
-  const csv = [cols.join(','), ...rows.map(r => cols.map(c => `"${String(r[c] ?? '').replaceAll('"','""')}"`).join(','))].join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${title}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
 }
 
 function qrPayload(row) {
@@ -136,7 +155,7 @@ export default function ResourceTable({ config, permissions = [], user = null })
       title: `Pago QR — ${row.cliente || 'Cliente'}`,
       data: {
         pago: [row],
-        qr: [{ instrucciones: 'El cliente puede pagar por QR o transferencia con estos datos.', payload: qrPayload(row), monto: row.monto, metodo_sugerido: row.metodo_pago || 'QR / Transferencia' }],
+        qr: [{ instrucciones: 'El cliente puede pagar por QR o transferencia con estos datos.', payload: qrPayload(row), monto: row.monto, metodo_sugerido: row.metodo_pago || 'QR / Transferencia' }]
       }
     });
   }
@@ -167,7 +186,9 @@ export default function ResourceTable({ config, permissions = [], user = null })
         <button className="btn btn-soft" onClick={() => load()}><i className="ti ti-refresh" />Refrescar</button>
       </div>
       <div className="toolbar-right">
-        <button className="btn btn-soft" onClick={() => exportCsv(rows, config.key)}><i className="ti ti-download" />Exportar</button>
+        <button className="btn btn-soft" onClick={() => copyToClipboard(rows, cols)} title="Copiar datos al portapapeles"><i className="ti ti-copy" />Copiar</button>
+        <button className="btn btn-soft" onClick={() => exportToExcel(rows, config.key, cols)}><i className="ti ti-file-spreadsheet" />Excel</button>
+        <button className="btn btn-soft" onClick={() => exportToPDF(rows, config.title, cols)}><i className="ti ti-file-pdf" />PDF</button>
         {canAdd && <button className="btn btn-primary" onClick={() => setModal({ mode: 'create', row: null, fields: config.fields })}><i className="ti ti-plus" />Añadir</button>}
       </div>
     </div>
@@ -186,7 +207,7 @@ export default function ResourceTable({ config, permissions = [], user = null })
                 <div className="row-actions">
                   {config.details?.map(d => <button key={d.label} className="btn btn-sm btn-view" onClick={() => showDetails(row, d)}><i className="ti ti-eye" />{d.label}</button>)}
                   {config.paymentQR && <button className="btn btn-sm btn-ok" onClick={() => showQR(row)}><i className="ti ti-qrcode" />Pagar / QR</button>}
-                  {config.quickCreate && <button className="btn btn-sm btn-ok" onClick={() => setModal({ mode: 'quick', resource: config.quickCreate.resource, row: Object.fromEntries(Object.entries(config.quickCreate.defaultsFromRow || {}).map(([target, source]) => [target, row[source]])), fields: config.quickCreate.fields })}><i className="ti ti-clock-plus" />{config.quickCreate.label}</button>}
+                  {config.quickCreate && <button className="btn btn-sm btn-ok" onClick={() => setModal({ mode: 'quick', resource: config.quickCreate.resource, row: Object.fromEntries(Object.entries(row).filter(([k]) => config.quickCreate.fields?.some(f => f.name === k))) })}><i className="ti ti-plus" />{config.quickCreate.label}</button>}
                   {canEdit && <button className="btn btn-sm btn-edit" onClick={() => setModal({ mode: 'edit', row, fields: config.fields })}><i className="ti ti-edit" />Editar</button>}
                   {canDelete && <button className="btn btn-sm btn-danger" onClick={() => del(row)}><i className="ti ti-trash" />Eliminar</button>}
                 </div>
@@ -197,7 +218,7 @@ export default function ResourceTable({ config, permissions = [], user = null })
       </div>
     </>}
 
-    {modal && <ModalForm title={modal.mode === 'quick' ? config.quickCreate.label : (modal.row ? `Editar ${config.title}` : `Nuevo ${config.title}`)} fields={modal.fields || config.fields} initial={modal.row} mode={modal.row ? 'edit' : 'create'} onClose={() => setModal(null)} onSave={save} />}
+    {modal && <ModalForm title={modal.mode === 'quick' ? config.quickCreate.label : (modal.row ? `Editar ${config.title}` : `Nuevo ${config.title}`)} fields={modal.fields || config.fields} initialData={modal.row} onSave={save} onCancel={() => setModal(null)} />}
     {detailModal && <DetailModal title={detailModal.title} data={detailModal.data} onClose={() => setDetailModal(null)} />}
   </div>;
 }
