@@ -7,6 +7,7 @@ const metodosPago = ['Efectivo', 'Transferencia', 'QR', 'Tarjeta', 'Cheque'];
 const estadoContrato = ['Activo', 'Finalizado', 'Despedido', 'Suspendido'];
 const asistencia = ['Presente', 'Tardanza', 'Falta', 'Permiso', 'Licencia'];
 const estadoOrdenPedido = ['Pendiente', 'Recibido', 'Cancelado'];
+const estadoNomina = ['Borrador', 'Cerrada', 'Pagada'];
 
 const f = (name, extra = {}) => ({ name, label: extra.label || name.replace(/^id_/, '').replaceAll('_', ' '), ...extra });
 const select = (name, label, source, extra = {}) => f(name, { label, type: 'select', source, ...extra });
@@ -39,7 +40,7 @@ export const modules = {
   },
 
   rrhh: {
-    title: 'Recursos humanos', subtitle: 'Empleados, contratos, asistencia, proyectos y mano de obra', icon: 'ti-user-check', owner: 'Integrante 2',
+    title: 'Recursos humanos', subtitle: 'Empleados, contratos, asistencia, proyectos, mano de obra y nómina avanzada', icon: 'ti-user-check', owner: 'Integrante 2',
     resources: [
       { key: 'empleados', title: 'Empleados', id: 'id_empleado', fields: [
         text('nombre_empleado','Nombre'), text('apellido_empleado','Apellido'),
@@ -47,13 +48,49 @@ export const modules = {
         text('telefono_empleado','Teléfono'), text('email_empleado','Correo'), text('ci_empleado','CI'), area('direccion_empleado','Dirección'),
         date('fecha_nacimiento_empleado','Fecha de nacimiento', { placeholder: '2025-05-25', help: 'Formato: año-mes-día. Ejemplo: 2025-05-25' }),
         select('id_categoria_empleado','Categoría','id_categoria_empleado', { catalogManage: catEmpleado }),
+        select('id_cargo_actual','Cargo actual','id_cargo_actual', { help: 'Cargo que ocupa en la empresa.' }),
         autoDate('fecha_ingreso_empleado','Fecha de ingreso', { disabled: true }),
+        number('tarifa_hora_actual','Tarifa por hora actual', { disabled: true, help: 'Se actualiza automáticamente con el historial de pagos.' }),
         select('id_estado_empleado','Estado empleado','id_estado_empleado', { hideOnCreate: true, help: 'Al crear queda activo por defecto. Solo se cambia al editar.' })
       ], details: [{ label: 'Resumen empleado', path: id => `/empleados/${id}/resumen` }], quickCreate: { label: 'Registrar asistencia', resource: 'control_asistencia', fields: [text('ci_empleado', 'CI del empleado', { placeholder: 'Ej: 8564321' }), select('id_empleado','Empleado','id_empleado'), staticSelect('estado_asistencia','Estado',asistencia), time('hora_entrada','Hora entrada'), time('hora_salida','Hora salida'), area('observaciones','Observaciones')] } },
+      { key: 'cargo_empleado', title: 'Cargos / Puestos', id: 'id_cargo', fields: [text('nombre_cargo','Nombre del cargo'), area('descripcion_cargo','Descripción'), number('nivel_jerarquico','Nivel jerárquico (1-5)', { help: '1=Obrero, 2=Capataz, 3=Técnico, 4=Ingeniero, 5=Administrador' }), staticSelect('estado','Estado',['ACTIVO','INACTIVO'])] },
+      { key: 'empleado_cargo', title: 'Asignación de cargo a empleado', id: 'id_empleado_cargo', fields: [select('id_empleado','Empleado','id_empleado'), select('id_cargo','Cargo','id_cargo'), date('fecha_asignacion','Fecha de asignación'), date('fecha_fin','Fecha fin', { help: 'Dejar vacío si sigue vigente.' }), staticSelect('estado','Estado',['ACTIVO','INACTIVO'])] },
+      { key: 'empleado_tipo_pago_historial', title: 'Historial tipo de pago/tarifa', id: 'id_historial', fields: [
+        select('id_empleado','Empleado','id_empleado'), select('id_tipo_pago','Tipo de pago','id_tipo_pago'), 
+        number('tarifa_hora','Tarifa por hora'), number('salario_base','Salario base mensual', { help: 'Si aplica pago fijo.' }),
+        date('fecha_inicio','Fecha inicio'), date('fecha_fin','Fecha fin', { help: 'Dejar vacío si es vigente.' }),
+        area('motivo','Motivo del cambio', { help: 'Ej: Aumento por desempeño, Cambio de puesto.' })
+      ], readonly: true, lockMessage: 'Se registra automáticamente al cambiar tipo de pago.' },
       { key: 'contrato_empleado', title: 'Contratos de empleado', id: 'id_contrato', fields: [select('id_empleado','Empleado','id_empleado'), select('id_tipo_contrato','Tipo contrato','id_tipo_contrato'), select('id_tipo_pago','Tipo pago','id_tipo_pago'), date('fecha_inicio','Fecha inicio'), date('fecha_fin','Fecha fin', { help: 'Al cambiar estado a Finalizado/Despedido, se llena automáticamente si está vacía.' }), number('tarifa','Tarifa / salario'), staticSelect('estado_contrato','Estado',estadoContrato)] },
       { key: 'control_asistencia', title: 'Asistencia de trabajadores', id: 'id_asistencia', fields: [text('ci_empleado','CI del empleado', { placeholder: 'Ej: 8564321' }), select('id_empleado','Empleado','id_empleado', { hideOnCreate: true }), date('fecha','Fecha asistencia'), time('hora_entrada','Hora entrada'), time('hora_salida','Hora salida'), staticSelect('estado_asistencia','Estado',asistencia), number('horas_trabajadas','Horas trabajadas', { disabled: true }), number('horas_extra','Horas extra', { disabled: true }), area('observaciones','Observaciones')] },
+      { key: 'asistencia_diaria_resumen', title: 'Resumen diario de asistencia', id: 'id_resumen', fields: [
+        select('id_empleado','Empleado','id_empleado'), date('fecha_resumen','Fecha'), 
+        number('minutos_retrasados','Minutos retrasados'), number('horas_trabajadas','Horas trabajadas'),
+        number('horas_extra','Horas extra'), staticSelect('estado_asistencia','Estado',asistencia),
+        number('descuento_aplicado','Descuento aplicado', { disabled: true, help: 'Calculado automáticamente: -8 por hora, -4 por media hora.' }),
+        area('observaciones','Observaciones')
+      ] },
       { key: 'proyecto_empleado', title: 'Asignación empleado a proyecto', id: 'id_proyecto_empleado', fields: [select('id_proyecto','Proyecto','id_proyecto'), select('id_empleado','Empleado','id_empleado'), text('rol_en_proyecto','Rol en proyecto'), date('fecha_ingreso','Fecha ingreso'), date('fecha_salida','Fecha salida', { help: 'Se llena al cambiar estado a Finalizado/Despedido.' }), staticSelect('estado','Estado',estadoContrato)] },
       { key: 'proyecto_mano_obra', title: 'Mano de obra por proyecto / historial', id: 'id_mano_obra', fields: [], readonly: true, lockMessage: 'Historial automático de mano de obra asignada a proyectos.' },
+      { key: 'nomina_resumen_mensual', title: 'Nómina resumen mensual (Cálculos)', id: 'id_nomina_resumen', fields: [
+        select('id_empleado','Empleado','id_empleado'), text('mes_year','Mes y Año (YYYY-MM)', { placeholder: '2026-06' }),
+        number('dias_calendario','Días calendario', { disabled: true }), number('dias_trabajados','Días trabajados', { disabled: true }),
+        number('dias_falta','Días de falta', { disabled: true }), number('horas_totales_trabajadas','Horas totales', { disabled: true }),
+        number('horas_extra_totales','Horas extra totales', { disabled: true }), number('minutos_retrasados_total','Minutos retrasados total', { disabled: true }),
+        text('nombre_cargo','Cargo', { disabled: true }), number('tarifa_hora','Tarifa por hora', { disabled: true }),
+        number('monto_horas_trabajadas','Monto horas trabajadas', { disabled: true }), 
+        number('monto_horas_extra','Monto horas extra (1.5x)', { disabled: true }),
+        number('descuento_retrasados','Descuento por retrasados', { disabled: true }),
+        number('subtotal','Subtotal', { disabled: true }), number('descuentos_otros','Otros descuentos'),
+        number('monto_neto','Monto neto a pagar', { disabled: true }),
+        staticSelect('estado_nomina','Estado nómina',estadoNomina), area('observaciones','Observaciones')
+      ], readonly: true, lockMessage: 'Se calcula automáticamente. Modificar solo los descuentos adicionales.' },
+      { key: 'descuentos_empleado', title: 'Descuentos aplicados', id: 'id_descuento', fields: [
+        select('id_empleado','Empleado','id_empleado'), select('id_nomina_resumen','Nómina relacionada','id_nomina_resumen', { help: 'Opcional' }),
+        staticSelect('tipo_descuento','Tipo descuento',['Falta','Retardo','Administrativo','Adelanto','Otro']),
+        number('monto_descuento','Monto descuento'), date('fecha_descuento','Fecha del descuento'),
+        area('motivo','Motivo del descuento')
+      ] },
       { key: 'nomina_pagos', title: 'Pagos de empleados / nómina', id: 'id_nomina', noEdit: true, noDelete: true, fields: [select('id_empleado','Empleado','id_empleado'), select('id_periodo_pago','Período pago','id_periodo_pago'), autoDate('periodo_inicio','Período inicio'), autoDate('periodo_fin','Período fin'), date('fecha_pago','Fecha pago'), number('dias_trabajados','Días trabajados'), number('horas_trabajadas','Horas trabajadas'), number('horas_extra','Horas extra'), number('monto_pago','Monto pago'), staticSelect('estado_pago','Estado',['PAGADO','PENDIENTE','PARCIAL'])] },
     ]
   },
