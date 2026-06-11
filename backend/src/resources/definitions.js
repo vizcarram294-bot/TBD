@@ -28,12 +28,42 @@ export const resources = {
       e.nombre_empleado, e.apellido_empleado, e.sexo, e.telefono_empleado, e.email_empleado,
       e.ci_empleado, e.direccion_empleado, e.fecha_nacimiento_empleado,
       ce.nombre_categoria_empleado AS categoria, ee.nombre_estado AS estado,
-      e.fecha_ingreso_empleado, e.id_categoria_empleado, e.id_estado_empleado
+      c.nombre_cargo AS cargo_actual, e.tarifa_hora_actual,
+      e.fecha_ingreso_empleado, e.id_categoria_empleado, e.id_estado_empleado, e.id_cargo_actual
       FROM empleados e
       LEFT JOIN categoria_empleado ce ON ce.id_categoria_empleado = e.id_categoria_empleado
-      LEFT JOIN estado_empleado ee ON ee.id_estado_empleado = e.id_estado_empleado`,
-    columns: ['nombre_empleado','apellido_empleado','sexo','telefono_empleado','email_empleado','ci_empleado','direccion_empleado','fecha_nacimiento_empleado','id_categoria_empleado','fecha_ingreso_empleado','id_estado_empleado'],
-    search: ['id_empleado','empleado','ci_empleado','telefono_empleado','email_empleado','categoria','estado','sexo'],
+      LEFT JOIN estado_empleado ee ON ee.id_estado_empleado = e.id_estado_empleado
+      LEFT JOIN cargo_empleado c ON c.id_cargo = e.id_cargo_actual`,
+    columns: ['nombre_empleado','apellido_empleado','sexo','telefono_empleado','email_empleado','ci_empleado','direccion_empleado','fecha_nacimiento_empleado','id_categoria_empleado','fecha_ingreso_empleado','id_estado_empleado','id_cargo_actual','tarifa_hora_actual'],
+    search: ['id_empleado','empleado','ci_empleado','telefono_empleado','email_empleado','categoria','estado','sexo','cargo_actual'],
+  },
+  cargo_empleado: {
+    table: 'cargo_empleado', id: 'id_cargo',
+    select: 'SELECT id_cargo, nombre_cargo, descripcion_cargo, nivel_jerarquico, estado FROM cargo_empleado',
+    columns: ['nombre_cargo','descripcion_cargo','nivel_jerarquico','estado'],
+    search: ['id_cargo','nombre_cargo','nivel_jerarquico'],
+  },
+  empleado_cargo: {
+    table: 'empleado_cargo', id: 'id_empleado_cargo',
+    select: `SELECT ec.id_empleado_cargo, CONCAT(e.nombre_empleado, ' ', e.apellido_empleado) AS empleado,
+      c.nombre_cargo AS cargo, ec.fecha_asignacion, ec.fecha_fin, ec.estado,
+      ec.id_empleado, ec.id_cargo
+      FROM empleado_cargo ec
+      LEFT JOIN empleados e ON e.id_empleado = ec.id_empleado
+      LEFT JOIN cargo_empleado c ON c.id_cargo = ec.id_cargo`,
+    columns: ['id_empleado','id_cargo','fecha_asignacion','fecha_fin','estado'],
+    search: ['id_empleado_cargo','empleado','cargo','estado'],
+  },
+  empleado_tipo_pago_historial: {
+    table: 'empleado_tipo_pago_historial', id: 'id_historial', allowCreate: false, allowUpdate: false, allowDelete: false,
+    select: `SELECT eth.id_historial, CONCAT(e.nombre_empleado, ' ', e.apellido_empleado) AS empleado,
+      tp.tipo_pago, eth.tarifa_hora, eth.salario_base, eth.fecha_inicio, eth.fecha_fin, eth.motivo,
+      eth.id_empleado, eth.id_tipo_pago
+      FROM empleado_tipo_pago_historial eth
+      LEFT JOIN empleados e ON e.id_empleado = eth.id_empleado
+      LEFT JOIN tipo_pago_trabajador tp ON tp.id_tipo_pago = eth.id_tipo_pago`,
+    columns: [],
+    search: ['id_historial','empleado','tipo_pago','tarifa_hora'],
   },
   contrato_empleado: {
     table: 'contrato_empleado', id: 'id_contrato',
@@ -57,6 +87,16 @@ export const resources = {
     virtualColumns: ['ci_empleado'],
     search: ['id_asistencia','empleado','ci_empleado','fecha','estado_asistencia'],
   },
+  asistencia_diaria_resumen: {
+    table: 'asistencia_diaria_resumen', id: 'id_resumen',
+    select: `SELECT adr.id_resumen, CONCAT(e.nombre_empleado, ' ', e.apellido_empleado) AS empleado,
+      adr.fecha_resumen, adr.minutos_retrasados, adr.horas_trabajadas, adr.horas_extra,
+      adr.estado_asistencia, adr.descuento_aplicado, adr.observaciones, adr.id_empleado
+      FROM asistencia_diaria_resumen adr
+      LEFT JOIN empleados e ON e.id_empleado = adr.id_empleado`,
+    columns: ['id_empleado','fecha_resumen','minutos_retrasados','horas_trabajadas','horas_extra','estado_asistencia','observaciones'],
+    search: ['id_resumen','empleado','fecha_resumen','estado_asistencia'],
+  },
   proyecto_empleado: {
     table: 'proyecto_empleado', id: 'id_proyecto_empleado',
     select: `SELECT pe.id_proyecto_empleado, p.nombre_proyecto AS proyecto, CONCAT(e.nombre_empleado, ' ', e.apellido_empleado, ' — CI ', e.ci_empleado) AS empleado,
@@ -77,6 +117,29 @@ export const resources = {
       LEFT JOIN fases_proyecto f ON f.id_fase = pmo.id_fase`,
     columns: [],
     search: ['id_mano_obra','proyecto','empleado','nombre_fase'],
+  },
+  nomina_resumen_mensual: {
+    table: 'nomina_resumen_mensual', id: 'id_nomina_resumen',
+    select: `SELECT nrm.id_nomina_resumen, CONCAT(e.nombre_empleado, ' ', e.apellido_empleado) AS empleado,
+      nrm.mes_year, nrm.dias_calendario, nrm.dias_trabajados, nrm.dias_falta,
+      nrm.horas_totales_trabajadas, nrm.horas_extra_totales, nrm.minutos_retrasados_total,
+      c.nombre_cargo, nrm.tarifa_hora, nrm.monto_horas_trabajadas, nrm.monto_horas_extra,
+      nrm.descuento_retrasados, nrm.subtotal, nrm.descuentos_otros, nrm.monto_neto,
+      nrm.estado_nomina, nrm.id_empleado, nrm.id_cargo
+      FROM nomina_resumen_mensual nrm
+      LEFT JOIN empleados e ON e.id_empleado = nrm.id_empleado
+      LEFT JOIN cargo_empleado c ON c.id_cargo = nrm.id_cargo`,
+    columns: ['id_empleado','mes_year','dias_trabajados','dias_falta','horas_totales_trabajadas','horas_extra_totales','minutos_retrasados_total','tarifa_hora','descuentos_otros','estado_nomina'],
+    search: ['id_nomina_resumen','empleado','mes_year','estado_nomina'],
+  },
+  descuentos_empleado: {
+    table: 'descuentos_empleado', id: 'id_descuento',
+    select: `SELECT de.id_descuento, CONCAT(e.nombre_empleado, ' ', e.apellido_empleado) AS empleado,
+      de.tipo_descuento, de.monto_descuento, de.fecha_descuento, de.motivo, de.id_empleado, de.id_nomina_resumen
+      FROM descuentos_empleado de
+      LEFT JOIN empleados e ON e.id_empleado = de.id_empleado`,
+    columns: ['id_empleado','id_nomina_resumen','tipo_descuento','monto_descuento','fecha_descuento','motivo'],
+    search: ['id_descuento','empleado','tipo_descuento','fecha_descuento'],
   },
   nomina_pagos: {
     table: 'nomina_pagos', id: 'id_nomina', allowUpdate: false, allowDelete: false,
@@ -161,8 +224,7 @@ export const resources = {
       LEFT JOIN clientes c ON c.id_cliente = p.id_cliente
       LEFT JOIN estados_proyecto ep ON ep.id_estado_proyecto = p.id_estado_proyecto
       LEFT JOIN centro_costo cc ON cc.id_centro_costo = p.id_centro_costo
-      LEFT JOIN fases_catalogo fc ON fc.id_fase_tipo = p.id_fase_tipo
-      LEFT JOIN cotizaciones co ON co.id_cotizacion = p.id_cotizacion`,
+      LEFT JOIN fases_catalogo fc ON fc.id_fase_tipo = p.id_fase_tipo`,
     columns: ['id_cliente','id_estado_proyecto','id_centro_costo','id_cotizacion','id_fase_tipo','codigo_proyecto','nombre_proyecto','ubicacion_proyecto','fecha_inicio_proyecto','fecha_fin_proyecto','costo_real_proyecto','prioridad_proyecto','porcentaje_avance','estado_registro'],
     search: ['id_proyecto','codigo_proyecto','nombre_proyecto','cliente','estado_proyecto','centro_costo','prioridad_proyecto','estado_registro','fase_actual'],
   },
@@ -225,14 +287,14 @@ export const resources = {
     search: ['id_inventario','material','almacen','observacion','estado_alerta'],
   },
   orden_pedido: {
-    table: 'orden_pedido', id: 'id_orden',
-    select: `SELECT op.id_orden, op.numero_orden, pr.nombre_proveedor AS proveedor,
+    table: 'orden_pedido', id: 'id_orden_pedido',
+    select: `SELECT op.id_orden_pedido, op.numero_orden, pr.nombre_proveedor AS proveedor,
       op.fecha_pedido, op.total_pedido, op.estado_pedido, op.observacion,
       op.id_proveedor
       FROM orden_pedido op
       LEFT JOIN proveedores pr ON pr.id_proveedor = op.id_proveedor`,
     columns: ['id_proveedor','fecha_pedido','estado_pedido','total_pedido','observacion'],
-    search: ['id_orden','numero_orden','proveedor','estado_pedido'],
+    search: ['id_orden_pedido','numero_orden','proveedor','estado_pedido'],
   },
   movimiento_inventario: {
     table: 'movimiento_inventario', id: 'id_movimiento', allowCreate: false, allowUpdate: false, allowDelete: false,
@@ -325,6 +387,7 @@ export const optionSources = {
   id_empleado: `SELECT id_empleado AS value, CONCAT(nombre_empleado, ' ', apellido_empleado, ' — CI ', ci_empleado) AS label FROM empleados ORDER BY nombre_empleado`,
   id_categoria_empleado: `SELECT id_categoria_empleado AS value, nombre_categoria_empleado AS label FROM categoria_empleado ORDER BY nombre_categoria_empleado`,
   id_estado_empleado: `SELECT id_estado_empleado AS value, nombre_estado AS label FROM estado_empleado ORDER BY nombre_estado`,
+  id_cargo: `SELECT id_cargo AS value, nombre_cargo AS label FROM cargo_empleado WHERE estado = 'ACTIVO' ORDER BY nombre_cargo`,
   id_tipo_contrato: `SELECT id_tipo_contrato AS value, tipo_contrato AS label FROM tipo_contrato ORDER BY tipo_contrato`,
   id_tipo_pago: `SELECT id_tipo_pago AS value, tipo_pago AS label FROM tipo_pago_trabajador ORDER BY tipo_pago`,
   id_periodo_pago: `SELECT id_periodo_pago AS value, tipo_periodo AS label FROM periodo_pago ORDER BY tipo_periodo`,
@@ -348,6 +411,7 @@ export const optionSources = {
   id_rol: `SELECT id_rol AS value, nombre_rol AS label FROM roles ORDER BY nombre_rol`,
   id_usuario: `SELECT id_usuario AS value, username AS label FROM usuarios ORDER BY username`,
   id_orden_compra: `SELECT id_orden_compra AS value, CONCAT('Orden #', id_orden_compra) AS label FROM orden_compra ORDER BY id_orden_compra DESC`,
+  id_nomina_resumen: `SELECT id_nomina_resumen AS value, CONCAT(CONCAT(e.nombre_empleado, ' ', e.apellido_empleado), ' — ', nrm.mes_year) AS label FROM nomina_resumen_mensual nrm LEFT JOIN empleados e ON e.id_empleado = nrm.id_empleado ORDER BY nrm.id_nomina_resumen DESC`,
 };
 
 export const dependentOptionSources = {
