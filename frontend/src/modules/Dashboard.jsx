@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';
+import { isAdmin, isAuditor } from '../permissions.js';
 
 function money(value) {
   const n = Number(value || 0);
@@ -35,7 +36,7 @@ function formatDate(value) {
   }
 }
 
-export default function Dashboard({ setPage }) {
+export default function Dashboard({ setPage, user, permissions = [] }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -61,6 +62,9 @@ export default function Dashboard({ setPage }) {
   const recientes = data?.proyectos_recientes || [];
   const avances = data?.avances || [];
   const auditoria = data?.auditoria || [];
+
+  // Verificar si el usuario es Admin o Auditor
+  const canViewAuditoria = isAdmin(user, permissions) || isAuditor(user);
 
   return <>
     <div className="topbar">
@@ -111,24 +115,26 @@ export default function Dashboard({ setPage }) {
             </div>
           </div>
 
-          <div className="dark-card audit-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-              <h3 style={{ margin: 0 }}>Auditoría reciente</h3>
-              <button className="btn btn-mini btn-soft" onClick={() => setPage('auditoria')}><i className="ti ti-file-text" />Ver todo</button>
+          {canViewAuditoria && (
+            <div className="dark-card audit-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <h3 style={{ margin: 0 }}>Auditoría reciente</h3>
+                <button className="btn btn-mini btn-soft" onClick={() => setPage('seguridad')}><i className="ti ti-file-text" />Ver todo</button>
+              </div>
+              <table className="dark-table">
+                <thead><tr><th>Tabla</th><th>Operación</th><th>Usuario</th><th>Fecha</th></tr></thead>
+                <tbody>
+                  {auditoria.length === 0 && <tr><td colSpan="4">Todavía no hay registros de auditoría.</td></tr>}
+                  {auditoria.map((a) => <tr key={a.id_auditoria}>
+                    <td>{a.tabla_afectada}</td>
+                    <td><span className={`op ${String(a.operacion || '').toLowerCase()}`}>{a.operacion}</span></td>
+                    <td>{a.usuario_nombre}</td>
+                    <td>{formatDate(a.fecha)}</td>
+                  </tr>)}
+                </tbody>
+              </table>
             </div>
-            <table className="dark-table">
-              <thead><tr><th>Tabla</th><th>Operación</th><th>Usuario</th><th>Fecha</th></tr></thead>
-              <tbody>
-                {auditoria.length === 0 && <tr><td colSpan="4">Todavía no hay registros de auditoría.</td></tr>}
-                {auditoria.map((a) => <tr key={a.id_auditoria}>
-                  <td>{a.tabla_afectada}</td>
-                  <td><span className={`op ${String(a.operacion || '').toLowerCase()}`}>{a.operacion}</span></td>
-                  <td>{a.usuario_nombre}</td>
-                  <td>{formatDate(a.fecha)}</td>
-                </tr>)}
-              </tbody>
-            </table>
-          </div>
+          )}
         </>}
       </div>
     </div>
