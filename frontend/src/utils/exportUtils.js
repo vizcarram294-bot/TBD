@@ -1,9 +1,9 @@
 /**
  * Utilidades de exportación a Excel y PDF
- * Soporta exportación profesional con estilos, bordes y formato
+ * Exporta a XLSX con celdas correctamente formateadas
  */
 
-// ============ EXCEL EXPORT (FUNCIONAL Y SIMPLE) ============
+// ============ EXCEL EXPORT (XLSX REAL) ============
 export function exportToExcel(rows, title, columns = null) {
   if (!rows || !rows.length) {
     alert('No hay datos para exportar');
@@ -21,18 +21,90 @@ export function exportToExcel(rows, title, columns = null) {
     data.push(cols.map(col => formatCellValue(row[col])));
   });
 
-  // Crear CSV con BOM para Excel
-  const csv = createCSVWorksheet(data);
-  downloadFile(csv, `${title}.csv`, 'text/csv');
+  // Generar XLSX
+  const xlsx = generateXLSX(data, cols, title);
+  downloadFile(xlsx, `${title}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 }
 
+function generateXLSX(data, cols, sheetName) {
+  // Crear estructura base de XLSX
+  const wb = {
+    SheetNames: [sheetName.substring(0, 31)], // Excel limita nombres a 31 caracteres
+    Sheets: {}
+  };
+  
+  const ws = {};
+  
+  // Agregar celdas (encabezados + datos)
+  data.forEach((row, rowIndex) => {
+    row.forEach((cell, colIndex) => {
+      const cellRef = String.fromCharCode(65 + colIndex) + (rowIndex + 1); // A1, B1, etc.
+      
+      // Formato especial para encabezados
+      if (rowIndex === 0) {
+        ws[cellRef] = {
+          v: cell,
+          t: 's',
+          s: {
+            font: { bold: true, color: { rgb: 'FFFFFF' } },
+            fill: { fgColor: { rgb: '4472C4' }, patternType: 'solid' },
+            alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+            border: {
+              left: { style: 'thin', color: { rgb: '000000' } },
+              right: { style: 'thin', color: { rgb: '000000' } },
+              top: { style: 'thin', color: { rgb: '000000' } },
+              bottom: { style: 'thin', color: { rgb: '000000' } }
+            }
+          }
+        };
+      } else {
+        // Detectar tipo de dato
+        let cellType = 's'; // string por defecto
+        let cellValue = cell;
+        
+        if (!isNaN(cellValue) && cellValue !== '' && cellValue !== null && cellValue !== undefined) {
+          const num = Number(cellValue);
+          if (!isNaN(num)) {
+            cellType = 'n';
+            cellValue = num;
+          }
+        }
+        
+        ws[cellRef] = {
+          v: cellValue,
+          t: cellType,
+          s: {
+            alignment: { horizontal: 'left', vertical: 'center', wrapText: true },
+            border: {
+              left: { style: 'thin', color: { rgb: 'CCCCCC' } },
+              right: { style: 'thin', color: { rgb: 'CCCCCC' } },
+              top: { style: 'thin', color: { rgb: 'CCCCCC' } },
+              bottom: { style: 'thin', color: { rgb: 'CCCCCC' } }
+            }
+          }
+        };
+      }
+    });
+  });
+  
+  // Establecer rango
+  ws['!ref'] = `A1:${String.fromCharCode(64 + cols.length)}${data.length}`;
+  
+  // Establecer ancho de columnas
+  ws['!cols'] = cols.map(() => ({ wch: 20 }));
+  
+  wb.Sheets[sheetName.substring(0, 31)] = ws;
+  
+  // Convertir a formato XLSX binario
+  return XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+}
+
+// Fallback a CSV si XLSX no está disponible
 function createCSVWorksheet(data) {
-  // BOM para UTF-8 en Excel (detecta automáticamente UTF-8)
   const BOM = '\uFEFF';
   const rows = data.map(row => 
     row.map(cell => {
       const str = String(cell ?? '').replace(/"/g, '""');
-      // Si contiene coma, comilla o salto de línea, envolver en comillas
       if (str.includes(',') || str.includes('"') || str.includes('\n')) {
         return `"${str}"`;
       }
@@ -244,7 +316,6 @@ function printToPDF(element) {
   // Esperar a que cargue y luego imprimir
   setTimeout(() => {
     printWindow.print();
-    // No cerrar automáticamente para que el usuario pueda guardar como PDF
   }, 250);
 }
 
@@ -283,7 +354,13 @@ function formatCellValue(value) {
 }
 
 function downloadFile(content, filename, mimeType) {
-  const blob = new Blob([content], { type: mimeType + ';charset=utf-8;' });
+  let blob;
+  if (content instanceof Uint8Array) {
+    blob = new Blob([content], { type: mimeType });
+  } else {
+    blob = new Blob([content], { type: mimeType + ';charset=utf-8;' });
+  }
+  
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
