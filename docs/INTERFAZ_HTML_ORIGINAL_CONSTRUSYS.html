@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ConstruSys — Interfaces del Sistema</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+  :root {
+    --blue: #185FA5; --blue-light: #E6F1FB; --blue-mid: #B5D4F4;
+    --green: #3B6D11; --green-light: #EAF3DE;
+    --teal: #0F6E56; --teal-light: #E1F5EE;
+    --amber: #854F0B; --amber-light: #FAEEDA;
+    --red: #A32D2D; --red-light: #FCEBEB;
+    --purple: #3C3489; --purple-light: #EEEDFE;
+    --gray: #5F5E5A; --gray-light: #F1EFE8;
+    --border: #E0DDD8; --border2: #CCCAC5;
+    --text: #2C2C2A; --text2: #5F5E5A; --text3: #888780;
+    --bg: #F7F5F2; --surface: #FFFFFF;
+    --sidebar-w: 220px;
+    --font: 'DM Sans', sans-serif;
+    --mono: 'DM Mono', monospace;
+    --radius: 10px; --radius-lg: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); font-size: 13px; line-height: 1.5; }
+
+  /* ─── SECTION LABELS ─── */
+  .screen-label {
+    background: var(--text); color: #fff;
+    font-family: var(--mono); font-size: 11px; letter-spacing: .06em;
+    padding: 10px 24px; display: flex; align-items: center; gap: 10px;
+  }
+  .screen-label span { opacity: .5; }
+
+  /* ─── LAYOUT SHELL ─── */
+  .shell { display: flex; min-height: 100vh; }
+
+  /* ─── SIDEBAR ─── */
+  .sidebar {
+    width: var(--sidebar-w); background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    flex-shrink: 0;
+  }
+  .logo { padding: 18px 16px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+  .logo-icon { width: 30px; height: 30px; background: var(--blue); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+  .logo-icon i { font-size: 16px; color: #fff; }
+  .logo-name { font-size: 14px; font-weight: 600; color: var(--text); }
+  .logo-sub { font-size: 10px; color: var(--text3); }
+  .nav-group { padding: 10px 8px 2px; }
+  .nav-section { font-size: 9px; font-weight: 600; color: var(--text3); letter-spacing: .08em; text-transform: uppercase; padding: 6px 10px 4px; }
+  .nav-item { display: flex; align-items: center; gap: 9px; padding: 7px 10px; margin: 1px 0; border-radius: 8px; cursor: pointer; font-size: 12.5px; color: var(--text2); transition: all .15s; }
+  .nav-item:hover { background: var(--gray-light); color: var(--text); }
+  .nav-item.active { background: var(--blue-light); color: var(--blue); font-weight: 500; }
+  .nav-item i { font-size: 15px; width: 17px; flex-shrink: 0; }
+  .sidebar-user { padding: 12px 14px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 9px; margin-top: auto; }
+  .s-av { width: 30px; height: 30px; border-radius: 50%; background: var(--blue-light); color: var(--blue); font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .s-name { font-size: 12px; font-weight: 500; }
+  .s-role { font-size: 10px; color: var(--text3); }
+
+  /* ─── MAIN CONTENT ─── */
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .topbar { padding: 14px 24px; border-bottom: 1px solid var(--border); background: var(--surface); display: flex; align-items: center; justify-content: space-between; }
+  .page-title { font-size: 16px; font-weight: 600; }
+  .page-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
+  .topbar-right { display: flex; align-items: center; gap: 8px; }
+  .content { padding: 20px 24px; }
+
+  /* ─── BUTTONS ─── */
+  .btn { display: inline-flex; align-items: center; gap: 5px; padding: 7px 12px; border-radius: 8px; border: 1px solid var(--border2); background: var(--surface); font-size: 12px; font-family: var(--font); color: var(--text); cursor: pointer; font-weight: 500; }
+  .btn i { font-size: 14px; }
+  .btn-primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .btn-sm { padding: 5px 10px; font-size: 11px; }
+
+  /* ─── BADGES ─── */
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+  .b-active { background: var(--green-light); color: var(--green); }
+  .b-pause { background: var(--amber-light); color: var(--amber); }
+  .b-done { background: var(--teal-light); color: var(--teal); }
+  .b-pending { background: var(--purple-light); color: var(--purple); }
+  .b-process { background: var(--blue-light); color: var(--blue); }
+  .b-warn { background: var(--red-light); color: var(--red); }
+  .b-high { background: var(--red-light); color: var(--red); }
+  .b-med { background: var(--amber-light); color: var(--amber); }
+  .b-low { background: var(--green-light); color: var(--green); }
+
+  /* ─── CARDS ─── */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 18px; }
+  .card-title { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+  .card-title a { font-size: 11px; color: var(--blue); font-weight: 400; cursor: pointer; }
+
+  /* ─── KPI ─── */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+  .kpi { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+  .kpi-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+  .kpi-icon i { font-size: 17px; }
+  .kpi-label { font-size: 10.5px; color: var(--text3); font-weight: 500; margin-bottom: 4px; text-transform: uppercase; letter-spacing: .04em; }
+  .kpi-value { font-size: 22px; font-weight: 600; color: var(--text); }
+  .kpi-delta { font-size: 10.5px; margin-top: 4px; display: flex; align-items: center; gap: 3px; }
+  .delta-up { color: var(--green); }
+  .delta-warn { color: var(--amber); }
+  .delta-red { color: var(--red); }
+
+  /* ─── TABLE ─── */
+  .tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .tbl th { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .05em; text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  .tbl td { padding: 9px 10px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .tbl tr:last-child td { border-bottom: none; }
+  .tbl tr:hover td { background: var(--bg); }
+
+  /* ─── AVATAR ─── */
+  .av { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; flex-shrink: 0; }
+  .av-b { background: var(--blue-light); color: var(--blue); }
+  .av-g { background: var(--green-light); color: var(--green); }
+  .av-a { background: var(--amber-light); color: var(--amber); }
+  .av-p { background: var(--purple-light); color: var(--purple); }
+  .av-t { background: var(--teal-light); color: var(--teal); }
+  .av-r { background: var(--red-light); color: var(--red); }
+  .emp-cell { display: flex; align-items: center; gap: 8px; }
+  .emp-nm { font-size: 12px; color: var(--text); font-weight: 500; }
+  .emp-rl { font-size: 10px; color: var(--text3); }
+
+  /* ─── PROGRESS BAR ─── */
+  .pbar { height: 5px; border-radius: 3px; background: var(--border); overflow: hidden; margin-top: 4px; }
+  .pbar-fill { height: 100%; border-radius: 3px; }
+
+  /* ─── TABS ─── */
+  .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+  .tab { padding: 8px 16px; font-size: 12px; color: var(--text3); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; font-weight: 500; }
+  .tab.on { color: var(--blue); border-bottom-color: var(--blue); }
+
+  /* ─── DIVIDER ─── */
+  hr { border: none; border-top: 1px solid var(--border); margin: 10px 0; }
+
+  /* ─── ALERTS ─── */
+  .alert-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+
+  /* ─── FORM INPUTS ─── */
+  .field label { display: block; font-size: 10px; color: var(--text3); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+  .field input, .field select { width: 100%; padding: 7px 10px; border: 1px solid var(--border2); border-radius: 8px; font-size: 12px; font-family: var(--font); color: var(--text); background: var(--surface); outline: none; }
+  .field input:focus, .field select:focus { border-color: var(--blue); }
+
+  /* ─── MINI CHART ─── */
+  .bars { display: flex; align-items: flex-end; gap: 6px; height: 56px; }
+  .bar { flex: 1; border-radius: 3px 3px 0 0; }
+  .bar-labels { display: flex; gap: 6px; margin-top: 4px; }
+  .bar-label { flex: 1; font-size: 9px; color: var(--text3); text-align: center; }
+
+  /* ─── GRID HELPERS ─── */
+  .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .g3 { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; }
+  .g4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+  .col { display: flex; flex-direction: column; gap: 14px; }
+
+  /* ─── PHASE BLOCK ─── */
+  .phase { margin-bottom: 14px; }
+  .phase-hdr { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+  .phase-num { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: #fff; flex-shrink: 0; }
+  .phase-name { font-size: 12px; font-weight: 600; color: var(--text); flex: 1; }
+  .phase-pct { font-size: 11px; color: var(--text3); }
+  .task-row { display: flex; align-items: center; gap: 7px; padding: 5px 0 5px 28px; border-bottom: 1px solid var(--border); }
+  .task-row:last-child { border-bottom: none; }
+  .chk { width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--border2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .chk.done { background: var(--blue); border-color: var(--blue); }
+  .chk.done i { font-size: 9px; color: #fff; }
+  .task-txt { font-size: 11.5px; color: var(--text2); flex: 1; }
+  .task-txt.done { text-decoration: line-through; color: var(--text3); }
+  .task-who { font-size: 10px; color: var(--text3); }
+
+  /* ─── PAYMENT ROW ─── */
+  .pay-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .pay-row:last-child { border-bottom: none; }
+  .pay-cuota { font-size: 12px; color: var(--text2); }
+  .pay-monto { font-size: 12px; font-weight: 600; color: var(--text); }
+  .pay-date { font-size: 10px; color: var(--text3); }
+
+  /* ─── INV ROW ─── */
+  .inv-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+  .inv-row:last-child { border-bottom: none; }
+  .inv-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .inv-name { flex: 1; font-size: 12px; color: var(--text2); }
+  .inv-val { font-size: 12px; font-weight: 600; }
+  .inv-min { font-size: 10px; color: var(--text3); }
+  .inv-bar-w { width: 64px; }
+
+  /* ─── AUDIT ROW ─── */
+  .aud-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .aud-row:last-child { border-bottom: none; }
+  .aud-op { padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 700; font-family: var(--mono); flex-shrink: 0; }
+  .op-i { background: var(--green-light); color: var(--green); }
+  .op-u { background: var(--blue-light); color: var(--blue); }
+  .op-d { background: var(--red-light); color: var(--red); }
+  .aud-table { font-size: 12px; color: var(--text); }
+  .aud-user { font-size: 10px; color: var(--text3); }
+
+  /* ─── PRINT ─── */
+  @media print {
+    .screen-label { background: #1a1a1a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .shell { page-break-after: always; }
+    .no-break { page-break-inside: avoid; }
+  }
+
+  /* ─── PAGE BREAK HELPER ─── */
+  .page-break { height: 0; border-top: 2px dashed #ccc; margin: 32px 0; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PANTALLA 1 — DASHBOARD GENERAL
+═══════════════════════════════════════════════════════════ -->
+<div class="screen-label">
+  <i class="ti ti-layout-dashboard" style="font-size:14px;"></i>
+  PANTALLA 01 — DASHBOARD GENERAL
+  <span>/ vista ejecutiva del sistema</span>
+</div>
+
+<div class="shell" style="min-height:auto;">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar" style="min-height:900px;">
+    <div class="logo">
+      <div class="logo-icon"><i class="ti ti-building"></i></div>
+      <div><div class="logo-name">ConstruSys</div><div class="logo-sub">Panel de gestión</div></div>
+    </div>
+    <div style="overflow-y:auto; flex:1;">
+      <div class="nav-group">
+        <div class="nav-section">Principal</div>
+        <div class="nav-item active"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
+        <div class="nav-section" style="margin-top:6px;">Proyectos</div>
+        <div class="nav-item"><i class="ti ti-briefcase"></i>Proyectos</div>
+        <div class="nav-item"><i class="ti ti-checklist"></i>Fases y tareas</div>
+        <div class="nav-item"><i class="ti ti-chart-line"></i>Avance de obra</div>
+        <div class="nav-section" style="margin-top:6px;">Clientes</div>
+        <div class="nav-item"><i class="ti ti-users"></i>Clientes</div>
+        <div class="nav-item"><i class="ti ti-file-invoice"></i>Cotizaciones</div>
+        <div class="nav-item"><i class="ti ti-credit-card"></i>Pagos cliente</div>
+        <div class="nav-section" style="margin-top:6px;">RRHH</div>
+        <div class="nav-item"><i class="ti ti-user-check"></i>Empleados</div>
+        <div class="nav-item"><i class="ti ti-clock"></i>Asistencia</div>
+        <div class="nav-item"><i class="ti ti-cash"></i>Nómina</div>
+        <div class="nav-section" style="margin-top:6px;">Materiales</div>
+        <div class="nav-item"><i class="ti ti-package"></i>Inventario</div>
+        <div class="nav-item"><i class="ti ti-truck"></i>Proveedores</div>
+        <div class="nav-item"><i class="ti ti-transfer"></i>Movimientos</div>
+        <div class="nav-section" style="margin-top:6px;">Finanzas</div>
+        <div class="nav-item"><i class="ti ti-report-money"></i>Costos y gastos</div>
+        <div class="nav-item"><i class="ti ti-building-bank"></i>Subcontratistas</div>
+        <div class="nav-section" style="margin-top:6px;">Sistema</div>
+        <div class="nav-item"><i class="ti ti-shield-check"></i>Usuarios y roles</div>
+        <div class="nav-item"><i class="ti ti-file-text"></i>Auditoría</div>
+        <div class="nav-item"><i class="ti ti-settings"></i>Configuración</div>
+      </div>
+    </div>
+    <div class="sidebar-user">
+      <div class="s-av">JM</div>
+      <div><div class="s-name">Javier Mamani</div><div class="s-role">Administrador</div></div>
+      <i class="ti ti-logout" style="font-size:15px;color:var(--text3);margin-left:auto;cursor:pointer;"></i>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="page-title">Dashboard general</div>
+        <div class="page-sub">Lunes, 18 de mayo de 2026 — resumen ejecutivo</div>
+      </div>
+      <div class="topbar-right">
+        <div class="btn"><i class="ti ti-bell"></i><span style="background:var(--red);color:#fff;border-radius:50%;width:16px;height:16px;font-size:9px;display:inline-flex;align-items:center;justify-content:center;margin-left:2px;">4</span></div>
+        <div class="btn"><i class="ti ti-download"></i>Exportar</div>
+        <div class="btn btn-primary"><i class="ti ti-plus"></i>Nuevo proyecto</div>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- KPIs -->
+      <div class="kpi-grid">
+        <div class="kpi">
+          <div class="kpi-icon" style="background:var(--blue-light);"><i class="ti ti-briefcase" style="color:var(--blue);"></i></div>
+          <div class="kpi-label">Proyectos activos</div>
+          <div class="kpi-value">12</div>
+          <div class="kpi-delta delta-up"><i class="ti ti-arrow-up" style="font-size:11px;"></i>3 este mes</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-icon" style="background:var(--green-light);"><i class="ti ti-cash" style="color:var(--green);"></i></div>
+          <div class="kpi-label">Ingresos cobrados</div>
+          <div class="kpi-value">Bs 847K</div>
+          <div class="kpi-delta delta-up"><i class="ti ti-arrow-up" style="font-size:11px;"></i>+12% vs mes ant.</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-icon" style="background:var(--purple-light);"><i class="ti ti-user-check" style="color:var(--purple);"></i></div>
+          <div class="kpi-label">Empleados activos</div>
+          <div class="kpi-value">34</div>
+          <div class="kpi-delta delta-up"><i class="ti ti-arrow-up" style="font-size:11px;"></i>2 nuevos</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-icon" style="background:var(--amber-light);"><i class="ti ti-alert-triangle" style="color:var(--amber);"></i></div>
+          <div class="kpi-label">Materiales bajo stock</div>
+          <div class="kpi-value">6</div>
+          <div class="kpi-delta delta-warn"><i class="ti ti-alert-triangle" style="font-size:11px;"></i>Requiere reposición</div>
+        </div>
+      </div>
+
+      <!-- ROW 2 -->
+      <div class="g2" style="margin-bottom:14px;">
+        <!-- Proyectos -->
+        <div class="card">
+          <div class="card-title">Proyectos en curso <a>Ver todos →</a></div>
+          <!-- p1 -->
+          <div style="padding:9px 0;border-bottom:1px solid var(--border);">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">
+              <div style="display:flex;align-items:center;gap:7px;">
+                <div style="width:8px;height:8px;border-radius:50%;background:var(--blue);flex-shrink:0;"></div>
+                <span style="font-size:12.5px;font-weight:500;color:var(--text);">Edificio Los Álamos — Torre B</span>
+              </div>
+              <span class="badge b-active">Activo</span>
+            </div>
+            <div style="font-size:10px;color:var(--text3);margin-left:15px;margin-bottom:4px;">Cochabamba · Fase 3 de 5 · Fin est. ago-2026</div>
+            <div style="margin-left:15px;"><div class="pbar"><div class="pbar-fill" style="width:62%;background:var(--blue);"></div></div></div>
+            <div style="font-size:10px;color:var(--text3);margin-left:15px;margin-top:2px;">62% completado</div>
+          </div>
+          <!-- p2 -->
+          <div style="padding:9px 0;border-bottom:1px solid var(--border);">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">
+              <div style="display:flex;align-items:center;gap:7px;">
+                <div style="width:8px;height:8px;border-radius:50%;background:#1D9E75;flex-shrink:0;"></div>
+                <span style="font-size:12.5px;font-weight:500;color:var(--text);">Residencial Bella Vista</span>
+              </div>
+              <span class="badge b-active">Activo</span>
+            </div>
+            <div style="font-size:10px;color:var(--text3);margin-left:15px;margin-bottom:4px;">Quillacollo · Fase 2 de 4 · Fin est. dic-2026</div>
+            <div style="margin-left:15px;"><div class="pbar"><div class="pbar-fill" style="width:38%;background:#1D9E75;"></div></div></div>
+            <div style="font-size:10px;color:var(--text3);margin-left:15px;margin-top:2px;">38% completado</div>
+          </div>
+          <!-- p3 -->
+          <div style="padding:9px 0;border-bottom:1px solid var(--border);">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">
+              <div style="display:flex;align-items:center;gap:7px;">
+                <div style="width:8px;height:8px;border-radius:50%;background:#EF9F27;flex-shrink:0;"></div>
+                <span style="font-size:12.5px;font-weight:500;color:var(--text);">Pavimentación Av. Petrolera</span>
+              </div>
+              <span class="badge b-pause">Pausado</span>
+            </div>
+            <div style="font-size:10px;color:var(--text3);margin-left:15px;margin-bottom:4px;">Sacaba · Fase 1 de 3 · Sin fecha confirmada</div>
+            <div style="margin-left:15px;"><div class="pbar"><div class="pbar-fill" style="width:18%;background:#EF9F27;"></div></div></div>
+            <div style="font-size:10px;color:var(--text3);margin-left:15px;margin-top:2px;">18% completado</div>
+          </div>
+          <!-- p4 -->
+          <div style="padding:9px 0;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">
+              <div style="display:flex;align-items:center;gap:7px;">
+                <div style="width:8px;height:8px;border-radius:50%;background:#534AB7;flex-shrink:0;"></div>
+                <span style="font-size:12.5px;font-weight:500;color:var(--text);">Centro Comercial Norte</span>
+              </div>
+              <span class="badge b-done">Finalizado</span>
+            </div>
+            <div style="font-size:10px;color:var(--text3);margin-left:15px;margin-bottom:4px;">Cbba Centro · Fase 5 de 5 · Entregado 10-may-2026</div>
+            <div style="margin-left:15px;"><div class="pbar"><div class="pbar-fill" style="width:100%;background:#534AB7;"></div></div></div>
+            <div style="font-size:10px;color:var(--text3);margin-left:15px;margin-top:2px;">100% completado</div>
+          </div>
+        </div>
+
+        <!-- Alertas -->
+        <div class="card">
+          <div class="card-title">Alertas del sistema <a>Marcar todas</a></div>
+          <div style="display:flex;align-items:flex-start;gap:9px;padding:8px 0;border-bottom:1px solid var(--border);">
+            <div class="alert-dot" style="background:var(--red);margin-top:4px;"></div>
+            <div><div style="font-size:12px;color:var(--text2);line-height:1.5;">Stock mínimo superado: Cemento Portland en Almacén Central (actual: 12 bolsas)</div><div style="font-size:10px;color:var(--text3);margin-top:2px;">Hace 20 min</div></div>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:9px;padding:8px 0;border-bottom:1px solid var(--border);">
+            <div class="alert-dot" style="background:#EF9F27;margin-top:4px;"></div>
+            <div><div style="font-size:12px;color:var(--text2);line-height:1.5;">Pago de cliente vencido: Bella Vista — cuota 2 (Bs 45.000)</div><div style="font-size:10px;color:var(--text3);margin-top:2px;">Hace 2 horas</div></div>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:9px;padding:8px 0;border-bottom:1px solid var(--border);">
+            <div class="alert-dot" style="background:#EF9F27;margin-top:4px;"></div>
+            <div><div style="font-size:12px;color:var(--text2);line-height:1.5;">Contrato próximo a vencer: Carlos Quispe — expira 01-jun-2026</div><div style="font-size:10px;color:var(--text3);margin-top:2px;">Hoy</div></div>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:9px;padding:8px 0;border-bottom:1px solid var(--border);">
+            <div class="alert-dot" style="background:var(--blue);margin-top:4px;"></div>
+            <div><div style="font-size:12px;color:var(--text2);line-height:1.5;">Nueva cotización solicitada: Ernesto Vargas Lara</div><div style="font-size:10px;color:var(--text3);margin-top:2px;">Ayer</div></div>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:9px;padding:8px 0;">
+            <div class="alert-dot" style="background:#1D9E75;margin-top:4px;"></div>
+            <div><div style="font-size:12px;color:var(--text2);line-height:1.5;">Fase 4 completada — Edificio Los Álamos. Revisión requerida.</div><div style="font-size:10px;color:var(--text3);margin-top:2px;">Hace 2 días</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROW 3 -->
+      <div class="g3">
+        <!-- Costos vs ingresos -->
+        <div class="card">
+          <div class="card-title">Costos vs ingresos — 2026</div>
+          <div class="tabs" style="margin-bottom:12px;">
+            <div class="tab on">Mensual</div><div class="tab">Por proyecto</div><div class="tab">Centro de costo</div>
+          </div>
+          <div class="bars">
+            <div class="bar" style="height:38px;background:#B5D4F4;"></div>
+            <div class="bar" style="height:50px;background:#B5D4F4;"></div>
+            <div class="bar" style="height:33px;background:#B5D4F4;"></div>
+            <div class="bar" style="height:45px;background:#B5D4F4;"></div>
+            <div class="bar" style="height:56px;background:var(--blue);"></div>
+          </div>
+          <div class="bar-labels"><div class="bar-label">Ene</div><div class="bar-label">Feb</div><div class="bar-label">Mar</div><div class="bar-label">Abr</div><div class="bar-label">May</div></div>
+          <hr style="margin:14px 0 10px;">
+          <div class="pay-row"><span style="font-size:12px;color:var(--text2);">Ingresos cobrados</span><span style="font-weight:600;color:var(--green);">Bs 847.200</span></div>
+          <div class="pay-row"><span style="font-size:12px;color:var(--text2);">Costo mano de obra</span><span style="font-weight:600;color:var(--red);">– Bs 210.400</span></div>
+          <div class="pay-row"><span style="font-size:12px;color:var(--text2);">Costo materiales</span><span style="font-weight:600;color:var(--red);">– Bs 318.900</span></div>
+          <div class="pay-row"><span style="font-size:12px;color:var(--text2);">Subcontratistas</span><span style="font-weight:600;color:var(--red);">– Bs 95.000</span></div>
+          <div class="pay-row" style="border-bottom:none;"><span style="font-size:13px;font-weight:600;color:var(--text);">Margen neto</span><span style="font-size:14px;font-weight:700;color:var(--blue);">Bs 222.900</span></div>
+        </div>
+
+        <!-- Empleados + Proximos pagos -->
+        <div class="col">
+          <div class="card">
+            <div class="card-title">Empleados en obra hoy</div>
+            <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);">
+              <div class="av av-b">MQ</div>
+              <div><div class="emp-nm">Mario Quispe</div><div class="emp-rl">Maestro mayor — Los Álamos</div></div>
+              <span class="badge b-active" style="margin-left:auto;font-size:10px;">Activo</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);">
+              <div class="av av-t">LF</div>
+              <div><div class="emp-nm">Laura Flores</div><div class="emp-rl">Supervisora — Bella Vista</div></div>
+              <span class="badge b-active" style="margin-left:auto;font-size:10px;">Activo</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:6px 0;">
+              <div class="av av-a">RM</div>
+              <div><div class="emp-nm">Roberto Mamani</div><div class="emp-rl">Ayudante — Av. Petrolera</div></div>
+              <span class="badge b-pause" style="margin-left:auto;font-size:10px;">Permiso</span>
+            </div>
+            <div style="font-size:10px;color:var(--text3);padding-top:8px;margin-top:4px;border-top:1px solid var(--border);">28 activos · 4 con permiso · 2 en licencia</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Próximos pagos</div>
+            <div class="pay-row"><span class="pay-cuota">Nómina quincenal</span><span class="badge b-pending" style="font-size:10px;">25-may</span></div>
+            <div class="pay-row"><span class="pay-cuota">Proveedor Ferromat</span><span class="badge b-warn" style="font-size:10px;">Vencido</span></div>
+            <div class="pay-row"><span class="pay-cuota">Subcontrato Eléctrico</span><span class="badge b-pending" style="font-size:10px;">30-may</span></div>
+            <div class="pay-row" style="border-bottom:none;"><span class="pay-cuota">Cuota cliente Vargas</span><span class="badge b-active" style="font-size:10px;">Cobrado</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PANTALLA 2 — DETALLE DE PROYECTO
+═══════════════════════════════════════════════════════════ -->
+<div class="page-break"></div>
+<div class="screen-label">
+  <i class="ti ti-briefcase" style="font-size:14px;"></i>
+  PANTALLA 02 — DETALLE DE PROYECTO
+  <span>/ fases, tareas, materiales, pagos y equipo</span>
+</div>
+
+<div class="shell" style="min-height:auto;">
+  <!-- sidebar (compact) -->
+  <div class="sidebar" style="min-height:860px;">
+    <div class="logo">
+      <div class="logo-icon"><i class="ti ti-building"></i></div>
+      <div><div class="logo-name">ConstruSys</div><div class="logo-sub">Panel de gestión</div></div>
+    </div>
+    <div style="flex:1;padding:10px 8px;">
+      <div class="nav-section">Principal</div>
+      <div class="nav-item"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
+      <div class="nav-section" style="margin-top:6px;">Proyectos</div>
+      <div class="nav-item active"><i class="ti ti-briefcase"></i>Proyectos</div>
+      <div class="nav-item" style="padding-left:22px;"><i class="ti ti-checklist"></i>Fases y tareas</div>
+      <div class="nav-item" style="padding-left:22px;"><i class="ti ti-chart-line"></i>Avance de obra</div>
+      <div class="nav-section" style="margin-top:6px;">Clientes</div>
+      <div class="nav-item"><i class="ti ti-users"></i>Clientes</div>
+      <div class="nav-item"><i class="ti ti-file-invoice"></i>Cotizaciones</div>
+      <div class="nav-item"><i class="ti ti-credit-card"></i>Pagos cliente</div>
+      <div class="nav-section" style="margin-top:6px;">RRHH</div>
+      <div class="nav-item"><i class="ti ti-user-check"></i>Empleados</div>
+      <div class="nav-item"><i class="ti ti-cash"></i>Nómina</div>
+      <div class="nav-section" style="margin-top:6px;">Materiales</div>
+      <div class="nav-item"><i class="ti ti-package"></i>Inventario</div>
+      <div class="nav-item"><i class="ti ti-truck"></i>Proveedores</div>
+    </div>
+    <div class="sidebar-user">
+      <div class="s-av">JM</div>
+      <div><div class="s-name">Javier Mamani</div><div class="s-role">Administrador</div></div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:2px;">Proyectos → <span style="color:var(--text);">Edificio Los Álamos — Torre B</span></div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <div class="page-title">Edificio Los Álamos — Torre B</div>
+          <span class="badge b-active">Activo</span>
+          <span class="badge b-high">Prioridad alta</span>
+        </div>
+        <div class="page-sub">Cliente: Gonzalo Pereira Molina · Cochabamba, Zona Norte · Inicio: 15-ene-2026 · Fin est.: 30-ago-2026</div>
+      </div>
+      <div class="topbar-right">
+        <div class="btn btn-sm"><i class="ti ti-edit"></i>Editar</div>
+        <div class="btn btn-sm"><i class="ti ti-file-invoice"></i>Cotización</div>
+        <div class="btn btn-sm btn-primary"><i class="ti ti-chart-line"></i>Registrar avance</div>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- KPIs proyecto -->
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px;">
+        <div class="kpi"><div class="kpi-label">Avance general</div><div class="kpi-value" style="font-size:20px;">62%</div><div class="kpi-delta" style="color:var(--text3);">Fase 3 de 5</div></div>
+        <div class="kpi"><div class="kpi-label">Costo real</div><div class="kpi-value" style="font-size:18px;">Bs 482K</div><div class="kpi-delta" style="color:var(--text3);">Presup: Bs 780K</div></div>
+        <div class="kpi"><div class="kpi-label">Mano de obra</div><div class="kpi-value" style="font-size:18px;">Bs 148K</div><div class="kpi-delta" style="color:var(--text3);">8 empleados</div></div>
+        <div class="kpi"><div class="kpi-label">Materiales</div><div class="kpi-value" style="font-size:18px;">Bs 210K</div><div class="kpi-delta" style="color:var(--text3);">14 materiales</div></div>
+        <div class="kpi"><div class="kpi-label">Pagos cobrados</div><div class="kpi-value" style="font-size:18px;">Bs 360K</div><div class="kpi-delta" style="color:var(--text3);">3 de 5 cuotas</div></div>
+      </div>
+
+      <div class="tabs">
+        <div class="tab on">Fases y tareas</div>
+        <div class="tab">Materiales</div>
+        <div class="tab">Equipo</div>
+        <div class="tab">Plan de pagos</div>
+        <div class="tab">Mano de obra</div>
+        <div class="tab">Historial</div>
+      </div>
+
+      <div class="g2">
+        <!-- Fases -->
+        <div class="card">
+          <div class="card-title">Fases del proyecto <a>+ Agregar fase</a></div>
+
+          <div class="phase">
+            <div class="phase-hdr">
+              <div class="phase-num" style="background:#1D9E75;">1</div>
+              <div class="phase-name">Excavación y fundaciones</div>
+              <span class="badge b-done" style="font-size:10px;">Completado</span>
+              <div class="phase-pct">100%</div>
+            </div>
+            <div class="pbar"><div class="pbar-fill" style="width:100%;background:#1D9E75;"></div></div>
+            <div class="task-row"><div class="chk done"><i class="ti ti-check"></i></div><div class="task-txt done">Limpieza y nivelación de terreno</div><div class="task-who">P. Vargas</div></div>
+            <div class="task-row"><div class="chk done"><i class="ti ti-check"></i></div><div class="task-txt done">Excavación perimetral (2.5m)</div><div class="task-who">Equipo A</div></div>
+            <div class="task-row"><div class="chk done"><i class="ti ti-check"></i></div><div class="task-txt done">Vaciado de zapatas corridas</div><div class="task-who">M. Quispe</div></div>
+          </div>
+
+          <div class="phase">
+            <div class="phase-hdr">
+              <div class="phase-num" style="background:#1D9E75;">2</div>
+              <div class="phase-name">Estructura de hormigón</div>
+              <span class="badge b-done" style="font-size:10px;">Completado</span>
+              <div class="phase-pct">100%</div>
+            </div>
+            <div class="pbar"><div class="pbar-fill" style="width:100%;background:#1D9E75;"></div></div>
+            <div class="task-row"><div class="chk done"><i class="ti ti-check"></i></div><div class="task-txt done">Encofrado columnas planta baja</div><div class="task-who">Equipo B</div></div>
+            <div class="task-row"><div class="chk done"><i class="ti ti-check"></i></div><div class="task-txt done">Vaciado losa primer piso</div><div class="task-who">M. Quispe</div></div>
+          </div>
+
+          <div class="phase">
+            <div class="phase-hdr">
+              <div class="phase-num" style="background:var(--blue);">3</div>
+              <div class="phase-name">Albañilería y muros</div>
+              <span class="badge b-process" style="font-size:10px;">En proceso</span>
+              <div class="phase-pct">45%</div>
+            </div>
+            <div class="pbar"><div class="pbar-fill" style="width:45%;background:var(--blue);"></div></div>
+            <div class="task-row"><div class="chk done"><i class="ti ti-check"></i></div><div class="task-txt done">Levantado de muros planta baja</div><div class="task-who">Equipo A</div></div>
+            <div class="task-row"><div class="chk"></div><div class="task-txt">Levantado muros primer piso <span style="background:var(--amber-light);color:var(--amber);font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px;">En curso</span></div><div class="task-who">Equipo A</div></div>
+            <div class="task-row"><div class="chk"></div><div class="task-txt">Revoque interior de muros</div><div class="task-who" style="color:var(--red);">Sin asignar</div></div>
+          </div>
+
+          <div class="phase">
+            <div class="phase-hdr">
+              <div class="phase-num" style="background:var(--gray);">4</div>
+              <div class="phase-name">Instalaciones eléctricas y sanitarias</div>
+              <span class="badge b-pending" style="font-size:10px;">Pendiente</span>
+              <div class="phase-pct">0%</div>
+            </div>
+            <div class="pbar"><div class="pbar-fill" style="width:0%;background:var(--purple);"></div></div>
+          </div>
+
+          <div class="phase" style="margin-bottom:0;">
+            <div class="phase-hdr">
+              <div class="phase-num" style="background:var(--gray);">5</div>
+              <div class="phase-name">Acabados finales y entrega</div>
+              <span class="badge b-pending" style="font-size:10px;">Pendiente</span>
+              <div class="phase-pct">0%</div>
+            </div>
+            <div class="pbar"><div class="pbar-fill" style="width:0%;background:var(--purple);"></div></div>
+          </div>
+        </div>
+
+        <!-- Right col -->
+        <div class="col">
+          <!-- Plan de pagos -->
+          <div class="card">
+            <div class="card-title">Plan de pagos — cliente</div>
+            <div class="pay-row"><div><div class="pay-cuota">Cuota 1 — Inicio obra</div><div class="pay-date">Pagado 15-ene-2026</div></div><div style="text-align:right;"><div class="pay-monto">Bs 120.000</div><span class="badge b-active" style="font-size:10px;">Cobrado</span></div></div>
+            <div class="pay-row"><div><div class="pay-cuota">Cuota 2 — Fase estructura</div><div class="pay-date">Pagado 15-mar-2026</div></div><div style="text-align:right;"><div class="pay-monto">Bs 120.000</div><span class="badge b-active" style="font-size:10px;">Cobrado</span></div></div>
+            <div class="pay-row"><div><div class="pay-cuota">Cuota 3 — 50% avance</div><div class="pay-date">Pagado 10-may-2026</div></div><div style="text-align:right;"><div class="pay-monto">Bs 120.000</div><span class="badge b-active" style="font-size:10px;">Cobrado</span></div></div>
+            <div class="pay-row" style="background:var(--blue-light);border-radius:8px;padding:8px 10px;margin:3px 0;border-bottom:none;"><div><div class="pay-cuota" style="font-weight:600;color:var(--text);">Cuota 4 — 75% avance</div><div class="pay-date">Vence 30-jun-2026</div></div><div style="text-align:right;"><div class="pay-monto">Bs 120.000</div><span class="badge b-pending" style="font-size:10px;">Pendiente</span></div></div>
+            <div class="pay-row" style="border-bottom:none;"><div><div class="pay-cuota">Cuota 5 — Entrega</div><div class="pay-date">Vence 30-ago-2026</div></div><div style="text-align:right;"><div class="pay-monto">Bs 120.000</div><span class="badge b-pending" style="font-size:10px;">Pendiente</span></div></div>
+            <hr><div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--text2);">Total contratado</span><span style="font-weight:700;color:var(--text);">Bs 600.000</span></div>
+          </div>
+
+          <!-- Materiales -->
+          <div class="card">
+            <div class="card-title">Materiales en este proyecto</div>
+            <div class="inv-row"><div class="inv-dot" style="background:var(--green);"></div><div class="inv-name">Cemento Portland (bolsa 50kg)</div><div><div class="inv-val">420 u.</div><div style="font-size:10px;color:var(--text3);">Bs 25.200</div></div></div>
+            <div class="inv-row"><div class="inv-dot" style="background:var(--green);"></div><div class="inv-name">Varilla de acero ø12mm</div><div><div class="inv-val">280 u.</div><div style="font-size:10px;color:var(--text3);">Bs 44.800</div></div></div>
+            <div class="inv-row"><div class="inv-dot" style="background:var(--green);"></div><div class="inv-name">Ladrillo gambote 6 huecos</div><div><div class="inv-val">8.400 u.</div><div style="font-size:10px;color:var(--text3);">Bs 21.000</div></div></div>
+            <div class="inv-row"><div class="inv-dot" style="background:var(--red);"></div><div class="inv-name"><span style="color:var(--red);">Arena fina (m³)</span> <i class="ti ti-alert-triangle" style="font-size:10px;color:var(--red);"></i></div><div><div class="inv-val" style="color:var(--red);">38 m³</div><div style="font-size:10px;color:var(--red);">stock bajo</div></div></div>
+            <div style="font-size:10px;color:var(--text3);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">+10 materiales más · Costo total: Bs 210.400</div>
+          </div>
+
+          <!-- Equipo -->
+          <div class="card">
+            <div class="card-title">Equipo asignado</div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);">
+              <div class="av av-b">MQ</div>
+              <div><div class="emp-nm">Mario Quispe</div><div class="emp-rl">Jefe de obra</div></div>
+              <span class="badge b-process" style="margin-left:auto;font-size:10px;">En sitio</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);">
+              <div class="av av-t">JL</div>
+              <div><div class="emp-nm">Juan Llanos</div><div class="emp-rl">Albañil oficial</div></div>
+              <span class="badge b-process" style="margin-left:auto;font-size:10px;">En sitio</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);">
+              <div class="av av-a">CP</div>
+              <div><div class="emp-nm">Carmen Paredes</div><div class="emp-rl">Residente de obra</div></div>
+              <span class="badge b-active" style="margin-left:auto;font-size:10px;">Oficina</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 0;">
+              <div class="av av-p">AV</div>
+              <div><div class="emp-nm">Subcontrato — Elec. Andina</div><div class="emp-rl">Inst. eléctricas (Fase 4)</div></div>
+              <span class="badge b-pending" style="margin-left:auto;font-size:10px;">Pendiente</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PANTALLA 3 — RRHH, INVENTARIO, COTIZACIONES Y AUDITORÍA
+═══════════════════════════════════════════════════════════ -->
+<div class="page-break"></div>
+<div class="screen-label">
+  <i class="ti ti-user-check" style="font-size:14px;"></i>
+  PANTALLA 03 — RRHH · INVENTARIO · COTIZACIONES · AUDITORÍA
+  <span>/ módulos de soporte operativo</span>
+</div>
+
+<div class="shell" style="min-height:auto;">
+  <div class="sidebar" style="min-height:1020px;">
+    <div class="logo">
+      <div class="logo-icon"><i class="ti ti-building"></i></div>
+      <div><div class="logo-name">ConstruSys</div><div class="logo-sub">Panel de gestión</div></div>
+    </div>
+    <div style="flex:1;padding:10px 8px;">
+      <div class="nav-section">Principal</div>
+      <div class="nav-item"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
+      <div class="nav-section" style="margin-top:6px;">Proyectos</div>
+      <div class="nav-item"><i class="ti ti-briefcase"></i>Proyectos</div>
+      <div class="nav-section" style="margin-top:6px;">Clientes</div>
+      <div class="nav-item"><i class="ti ti-users"></i>Clientes</div>
+      <div class="nav-item"><i class="ti ti-file-invoice"></i>Cotizaciones</div>
+      <div class="nav-section" style="margin-top:6px;">RRHH</div>
+      <div class="nav-item active"><i class="ti ti-user-check"></i>Empleados</div>
+      <div class="nav-item"><i class="ti ti-clock"></i>Asistencia</div>
+      <div class="nav-item"><i class="ti ti-cash"></i>Nómina</div>
+      <div class="nav-section" style="margin-top:6px;">Materiales</div>
+      <div class="nav-item"><i class="ti ti-package"></i>Inventario</div>
+      <div class="nav-item"><i class="ti ti-truck"></i>Proveedores</div>
+      <div class="nav-section" style="margin-top:6px;">Sistema</div>
+      <div class="nav-item"><i class="ti ti-shield-check"></i>Usuarios y roles</div>
+      <div class="nav-item"><i class="ti ti-file-text"></i>Auditoría</div>
+    </div>
+    <div class="sidebar-user">
+      <div class="s-av">JM</div>
+      <div><div class="s-name">Javier Mamani</div><div class="s-role">Administrador</div></div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div><div class="page-title">Recursos humanos — Empleados</div><div class="page-sub">Gestión de planilla, contratos y nómina</div></div>
+      <div class="topbar-right">
+        <div class="btn"><i class="ti ti-filter"></i>Filtrar</div>
+        <div class="btn"><i class="ti ti-download"></i>Exportar</div>
+        <div class="btn btn-primary"><i class="ti ti-plus"></i>Nuevo empleado</div>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- Empleados table -->
+      <div class="card" style="margin-bottom:14px;">
+        <div class="card-title">Planilla de empleados <a>34 empleados · Próxima nómina: 25-may-2026</a></div>
+        <table class="tbl">
+          <thead><tr>
+            <th>Empleado</th><th>Categoría</th><th>Contrato</th><th>Tarifa</th><th>Asistencia hoy</th><th>Proyectos</th><th>Estado</th><th></th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td><div class="emp-cell"><div class="av av-b">MQ</div><div><div class="emp-nm">Mario Quispe</div><div class="emp-rl">Maestro mayor</div></div></div></td>
+              <td>Técnico senior</td><td>Indefinido</td><td>Bs 180/día</td>
+              <td><span class="badge b-active">Presente</span></td>
+              <td style="text-align:center;">2</td>
+              <td><span class="badge b-active">Activo</span></td>
+              <td><i class="ti ti-dots" style="color:var(--text3);cursor:pointer;font-size:16px;"></i></td>
+            </tr>
+            <tr>
+              <td><div class="emp-cell"><div class="av av-t">LF</div><div><div class="emp-nm">Laura Flores</div><div class="emp-rl">Supervisora</div></div></div></td>
+              <td>Profesional</td><td>Plazo fijo</td><td>Bs 220/día</td>
+              <td><span class="badge b-active">Presente</span></td>
+              <td style="text-align:center;">1</td>
+              <td><span class="badge b-active">Activo</span></td>
+              <td><i class="ti ti-dots" style="color:var(--text3);cursor:pointer;font-size:16px;"></i></td>
+            </tr>
+            <tr>
+              <td><div class="emp-cell"><div class="av av-a">CQ</div><div><div class="emp-nm">Carlos Quispe R.</div><div class="emp-rl">Ayudante</div></div></div></td>
+              <td>Operario</td><td>Plazo fijo</td><td>Bs 90/día</td>
+              <td><span class="badge b-pause">Tardanza</span></td>
+              <td style="text-align:center;">1</td>
+              <td><span class="badge b-pause">Contrato próx.</span></td>
+              <td><i class="ti ti-dots" style="color:var(--text3);cursor:pointer;font-size:16px;"></i></td>
+            </tr>
+            <tr>
+              <td><div class="emp-cell"><div class="av av-p">RM</div><div><div class="emp-nm">Roberto Mamani</div><div class="emp-rl">Electricista</div></div></div></td>
+              <td>Técnico medio</td><td>Por obra</td><td>Bs 28/hora</td>
+              <td><span class="badge b-pending">Permiso</span></td>
+              <td style="text-align:center;">2</td>
+              <td><span class="badge b-active">Activo</span></td>
+              <td><i class="ti ti-dots" style="color:var(--text3);cursor:pointer;font-size:16px;"></i></td>
+            </tr>
+            <tr>
+              <td><div class="emp-cell"><div class="av av-r">AN</div><div><div class="emp-nm">Ana Nogales</div><div class="emp-rl">Contadora</div></div></div></td>
+              <td>Administrativo</td><td>Indefinido</td><td>Bs 3.500/mes</td>
+              <td><span class="badge b-active">Presente</span></td>
+              <td style="text-align:center;">0</td>
+              <td><span class="badge b-active">Activo</span></td>
+              <td><i class="ti ti-dots" style="color:var(--text3);cursor:pointer;font-size:16px;"></i></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Row: Inventario + Nueva cotización + Auditoría -->
+      <div class="g2">
+        <!-- Inventario -->
+        <div class="card">
+          <div class="card-title">Inventario — Almacén Central <a><i class="ti ti-transfer" style="font-size:12px;"></i> Movimiento</a></div>
+          <div class="inv-row">
+            <div class="inv-dot" style="background:var(--red);"></div>
+            <div class="inv-name"><span style="color:var(--red);font-weight:500;">Cemento Portland 50kg</span></div>
+            <div class="inv-bar-w"><div class="pbar"><div class="pbar-fill" style="width:24%;background:var(--red);"></div></div></div>
+            <div><div class="inv-val" style="color:var(--red);">12 bolsas</div><div class="inv-min">Mín: 50</div></div>
+            <span class="badge b-warn" style="font-size:10px;">Reponer</span>
+          </div>
+          <div class="inv-row">
+            <div class="inv-dot" style="background:#EF9F27;"></div>
+            <div class="inv-name">Arena gruesa m³</div>
+            <div class="inv-bar-w"><div class="pbar"><div class="pbar-fill" style="width:55%;background:#EF9F27;"></div></div></div>
+            <div><div class="inv-val" style="color:var(--amber);">18 m³</div><div class="inv-min">Mín: 15</div></div>
+            <span class="badge b-pause" style="font-size:10px;">Bajo</span>
+          </div>
+          <div class="inv-row">
+            <div class="inv-dot" style="background:var(--green);"></div>
+            <div class="inv-name">Varilla acero ø12mm</div>
+            <div class="inv-bar-w"><div class="pbar"><div class="pbar-fill" style="width:88%;background:var(--green);"></div></div></div>
+            <div><div class="inv-val">340 barras</div><div class="inv-min">Mín: 80</div></div>
+            <span class="badge b-active" style="font-size:10px;">OK</span>
+          </div>
+          <div class="inv-row">
+            <div class="inv-dot" style="background:var(--green);"></div>
+            <div class="inv-name">Ladrillo gambote 6 huecos</div>
+            <div class="inv-bar-w"><div class="pbar"><div class="pbar-fill" style="width:95%;background:var(--green);"></div></div></div>
+            <div><div class="inv-val">12.400 u.</div><div class="inv-min">Mín: 2.000</div></div>
+            <span class="badge b-active" style="font-size:10px;">OK</span>
+          </div>
+          <div class="inv-row">
+            <div class="inv-dot" style="background:var(--red);"></div>
+            <div class="inv-name"><span style="color:var(--red);font-weight:500;">Pintura látex interior (gal)</span></div>
+            <div class="inv-bar-w"><div class="pbar"><div class="pbar-fill" style="width:20%;background:var(--red);"></div></div></div>
+            <div><div class="inv-val" style="color:var(--red);">4 galones</div><div class="inv-min">Mín: 20</div></div>
+            <span class="badge b-warn" style="font-size:10px;">Reponer</span>
+          </div>
+          <div style="font-size:10px;color:var(--text3);padding-top:8px;margin-top:6px;border-top:1px solid var(--border);display:flex;justify-content:space-between;">
+            <span>48 materiales · 2 almacenes activos</span>
+            <span style="color:var(--blue);cursor:pointer;">Ver todo →</span>
+          </div>
+        </div>
+
+        <!-- Col: Cotización + Auditoría -->
+        <div class="col">
+          <!-- Cotización -->
+          <div class="card">
+            <div class="card-title">Nueva cotización</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+              <div class="field"><label>Cliente</label><select><option>Ernesto Vargas Lara</option></select></div>
+              <div class="field"><label>Ubicación obra</label><input value="Av. Blanco Galindo Km 5" /></div>
+              <div class="field"><label>Metros cuadrados</label><input type="number" value="320" /></div>
+              <div class="field"><label>N° de pisos</label><input type="number" value="3" /></div>
+              <div class="field"><label>Tiempo est. (días)</label><input type="number" value="180" /></div>
+              <div class="field"><label>Margen ganancia %</label><input type="number" value="18" /></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+              <div class="field"><label>Materiales (Bs)</label><input value="185.000" /></div>
+              <div class="field"><label>Mano de obra (Bs)</label><input value="96.000" /></div>
+              <div class="field"><label>Otros costos (Bs)</label><input value="12.500" /></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:9px 12px;background:var(--blue-light);border-radius:8px;margin-bottom:10px;">
+              <span style="font-size:12px;color:var(--text2);font-weight:500;">Precio final estimado</span>
+              <span style="font-size:14px;font-weight:700;color:var(--blue);">Bs 344.850</span>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <div class="btn" style="flex:1;justify-content:center;font-size:12px;"><i class="ti ti-eye"></i>Vista previa</div>
+              <div class="btn btn-primary" style="flex:1;justify-content:center;font-size:12px;"><i class="ti ti-send"></i>Enviar cotización</div>
+            </div>
+          </div>
+
+          <!-- Auditoría -->
+          <div class="card">
+            <div class="card-title">Auditoría reciente <a>Ver registro completo</a></div>
+            <div class="aud-row">
+              <span class="aud-op op-i">INSERT</span>
+              <div><div class="aud-table">proyecto_material</div><div class="aud-user">jmamani · hace 12 min</div></div>
+            </div>
+            <div class="aud-row">
+              <span class="aud-op op-u">UPDATE</span>
+              <div><div class="aud-table">fases_proyecto · id=14</div><div class="aud-user">lflores · hace 35 min</div></div>
+            </div>
+            <div class="aud-row">
+              <span class="aud-op op-i">INSERT</span>
+              <div><div class="aud-table">pagos_cliente · Bs 120.000</div><div class="aud-user">anogales · hace 1 hora</div></div>
+            </div>
+            <div class="aud-row">
+              <span class="aud-op op-u">UPDATE</span>
+              <div><div class="aud-table">control_asistencia · 5 registros</div><div class="aud-user">sistema · hace 2 horas</div></div>
+            </div>
+            <div class="aud-row">
+              <span class="aud-op op-d">DELETE</span>
+              <div><div class="aud-table">cotizaciones · id=8 (anulada)</div><div class="aud-user">jmamani · ayer</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<div style="background:var(--text);color:#fff;font-family:var(--mono);font-size:10px;padding:12px 24px;display:flex;justify-content:space-between;align-items:center;opacity:.85;">
+  <span>ConstruSys — Propuesta de interfaces · 3 pantallas principales</span>
+  <span>Para capturas: Ctrl+P → Guardar como PDF en Chrome · Mayo 2026</span>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,7 @@
+Bro, ya está dividido por módulos y conectado a SQL Server Management Studio. El sistema mantiene la interfaz ConstruSys, pero ahora tiene botones separados para Seguridad, RRHH, Clientes/Finanzas, Proyectos, Inventario, Proveedores, Subcontratistas y Catálogos.
+
+Las tablas principales tienen Añadir, Editar, Eliminar, Buscar, Limpiar, Refrescar y Exportar cuando corresponde. Las tablas que son historial/automáticas no permiten añadir ni eliminar para no dañar la información.
+
+Los formularios ya no piden IDs manuales: cliente, empleado, proyecto, estado, categoría, proveedor, almacén, contrato, etc. se eligen desde desplegables cargados de la BD.
+
+También se agregaron automatizaciones: disponibilidad al crear empleado, fecha fin de contrato si queda despedido/finalizado, historial de costos al cambiar precio del material, movimiento de inventario al asignar material a proyecto, y flujo/avance al editar proyecto.
