@@ -1,9 +1,11 @@
 /**
  * Utilidades de exportación a Excel y PDF
- * Exporta a XLSX con celdas correctamente formateadas
+ * Exporta a XLSX con celdas correctamente formateadas usando librería XLSX
  */
 
-// ============ EXCEL EXPORT (XLSX REAL) ============
+import * as XLSX from 'xlsx';
+
+// ============ EXCEL EXPORT (XLSX CON LIBRERÍA XLSX) ============
 export function exportToExcel(rows, title, columns = null) {
   if (!rows || !rows.length) {
     alert('No hay datos para exportar');
@@ -16,103 +18,67 @@ export function exportToExcel(rows, title, columns = null) {
   const data = [];
   data.push(cols);
   
-  // Agregar todas las filas
+  // Agregar todas las filas con datos formateados
   rows.forEach(row => {
     data.push(cols.map(col => formatCellValue(row[col])));
   });
 
-  // Generar XLSX
-  const xlsx = generateXLSX(data, cols, title);
-  downloadFile(xlsx, `${title}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-}
-
-function generateXLSX(data, cols, sheetName) {
-  // Crear estructura base de XLSX
-  const wb = {
-    SheetNames: [sheetName.substring(0, 31)], // Excel limita nombres a 31 caracteres
-    Sheets: {}
+  // Crear worksheet
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  
+  // Aplicar estilos a encabezados
+  const headerStyle = {
+    font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 11 },
+    fill: { fgColor: { rgb: '4472C4' }, patternType: 'solid' },
+    alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+    border: {
+      left: { style: 'thin', color: { rgb: '000000' } },
+      right: { style: 'thin', color: { rgb: '000000' } },
+      top: { style: 'thin', color: { rgb: '000000' } },
+      bottom: { style: 'thin', color: { rgb: '000000' } }
+    }
   };
-  
-  const ws = {};
-  
-  // Agregar celdas (encabezados + datos)
-  data.forEach((row, rowIndex) => {
-    row.forEach((cell, colIndex) => {
-      const cellRef = String.fromCharCode(65 + colIndex) + (rowIndex + 1); // A1, B1, etc.
-      
-      // Formato especial para encabezados
-      if (rowIndex === 0) {
-        ws[cellRef] = {
-          v: cell,
-          t: 's',
-          s: {
-            font: { bold: true, color: { rgb: 'FFFFFF' } },
-            fill: { fgColor: { rgb: '4472C4' }, patternType: 'solid' },
-            alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
-            border: {
-              left: { style: 'thin', color: { rgb: '000000' } },
-              right: { style: 'thin', color: { rgb: '000000' } },
-              top: { style: 'thin', color: { rgb: '000000' } },
-              bottom: { style: 'thin', color: { rgb: '000000' } }
-            }
-          }
-        };
-      } else {
-        // Detectar tipo de dato
-        let cellType = 's'; // string por defecto
-        let cellValue = cell;
-        
-        if (!isNaN(cellValue) && cellValue !== '' && cellValue !== null && cellValue !== undefined) {
-          const num = Number(cellValue);
-          if (!isNaN(num)) {
-            cellType = 'n';
-            cellValue = num;
-          }
-        }
-        
-        ws[cellRef] = {
-          v: cellValue,
-          t: cellType,
-          s: {
-            alignment: { horizontal: 'left', vertical: 'center', wrapText: true },
-            border: {
-              left: { style: 'thin', color: { rgb: 'CCCCCC' } },
-              right: { style: 'thin', color: { rgb: 'CCCCCC' } },
-              top: { style: 'thin', color: { rgb: 'CCCCCC' } },
-              bottom: { style: 'thin', color: { rgb: 'CCCCCC' } }
-            }
-          }
-        };
-      }
-    });
-  });
-  
-  // Establecer rango
-  ws['!ref'] = `A1:${String.fromCharCode(64 + cols.length)}${data.length}`;
-  
-  // Establecer ancho de columnas
-  ws['!cols'] = cols.map(() => ({ wch: 20 }));
-  
-  wb.Sheets[sheetName.substring(0, 31)] = ws;
-  
-  // Convertir a formato XLSX binario
-  return XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-}
 
-// Fallback a CSV si XLSX no está disponible
-function createCSVWorksheet(data) {
-  const BOM = '\uFEFF';
-  const rows = data.map(row => 
-    row.map(cell => {
-      const str = String(cell ?? '').replace(/"/g, '""');
-      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-        return `"${str}"`;
-      }
-      return str;
-    }).join(',')
-  );
+  // Aplicar estilo a datos
+  const dataStyle = {
+    alignment: { horizontal: 'left', vertical: 'center', wrapText: true },
+    border: {
+      left: { style: 'thin', color: { rgb: 'CCCCCC' } },
+      right: { style: 'thin', color: { rgb: 'CCCCCC' } },
+      top: { style: 'thin', color: { rgb: 'CCCCCC' } },
+      bottom: { style: 'thin', color: { rgb: 'CCCCCC' } }
+    }
+  };
+
+  // Aplicar estilos a cada celda
+  for (let C = 0; C < cols.length; C++) {
+    // Encabezado
+    const headerCell = XLSX.utils.encode_cell({ r: 0, c: C });
+    if (!ws[headerCell]) ws[headerCell] = {};
+    ws[headerCell].s = headerStyle;
+
+    // Datos
+    for (let R = 1; R < data.length; R++) {
+      const dataCell = XLSX.utils.encode_cell({ r: R, c: C });
+      if (!ws[dataCell]) ws[dataCell] = {};
+      ws[dataCell].s = dataStyle;
+    }
+  }
+
+  // Establecer ancho de columnas
+  ws['!cols'] = cols.map(() => ({ wch: 25 }));
+
+  // Establecer altura de encabezado
+  ws['!rows'] = [{ hpx: 25 }];
+
+  // Crear workbook
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, title.substring(0, 31));
+
+  // Descargar archivo
+  XLSX.writeFile(wb, `${title}.xlsx`);
   
-  return BOM + rows.join('\n');
+  alert(`✓ Archivo "${title}.xlsx" descargado exitosamente`);
 }
 
 // ============ PDF EXPORT ============
@@ -345,30 +311,8 @@ function formatCellValue(value) {
     return `${d}/${m}/${y} ${time}`;
   }
   
-  // Limitar texto largo
-  if (str.length > 100) {
-    return str.substring(0, 100) + '...';
-  }
-  
+  // Limitar texto largo pero no truncar aquí, Excel lo maneja
   return str;
-}
-
-function downloadFile(content, filename, mimeType) {
-  let blob;
-  if (content instanceof Uint8Array) {
-    blob = new Blob([content], { type: mimeType });
-  } else {
-    blob = new Blob([content], { type: mimeType + ';charset=utf-8;' });
-  }
-  
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
 }
 
 // ============ COPY TO CLIPBOARD ============
