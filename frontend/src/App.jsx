@@ -9,12 +9,14 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [page, setPage] = useState('dashboard');
 
-  // Siempre que se abre la aplicación desde cero, se exige login.
-  // Evita que quede una sesión vieja guardada y entre directo al dashboard.
+  // Siempre que se abre la aplicación desde cero, se exige login VACÍO.
+  // Limpia todo el localStorage y localStorage para obligar login fresco.
   useEffect(() => {
-    localStorage.removeItem('construsys_token');
-    localStorage.removeItem('construsys_user');
-    localStorage.removeItem('construsys_permissions');
+    // Limpiar localStorage completamente
+    localStorage.clear();
+    sessionStorage.clear();
+    // Forzar que no haya sesión
+    setSession(null);
   }, []);
 
   function handleLogin(data) {
@@ -22,9 +24,8 @@ export default function App() {
   }
 
   function logout() {
-    localStorage.removeItem('construsys_token');
-    localStorage.removeItem('construsys_user');
-    localStorage.removeItem('construsys_permissions');
+    localStorage.clear();
+    sessionStorage.clear();
     setSession(null);
     setPage('dashboard');
   }
