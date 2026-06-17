@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { create, remove, options as loadOptions } from '../api.js';
+import { create, remove, options as loadOptions, update } from '../api.js';
 
 function today() {
   return new Date().toISOString().slice(0, 10);
@@ -30,7 +30,7 @@ function parseNumber(value) {
   return Number.isFinite(n) ? n : 0;
 }
 
-export default function ModalForm({ title, fields, initial, mode = 'create', onClose, onSave }) {
+export default function ModalForm({ title, fields, initial, mode = 'create', onClose, onSave, resourceId, resourceKey }) {
   const normalized = useMemo(() => fields.map(normalizeField).filter(f => {
     if (mode === 'create' && f.hideOnCreate) return false;
     if (mode === 'edit' && f.hideOnEdit) return false;
@@ -39,17 +39,22 @@ export default function ModalForm({ title, fields, initial, mode = 'create', onC
   const [form, setForm] = useState({});
   const [remoteOptions, setRemoteOptions] = useState({});
   const [refreshKey, setRefreshKey] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const base = {};
     normalized.forEach(field => {
-      if (initial?.[field.name] !== undefined && initial?.[field.name] !== null) base[field.name] = normalizeValueForField(field, initial[field.name]);
+      if (initial?.[field.name] !== undefined && initial?.[field.name] !== null) {
+        base[field.name] = normalizeValueForField(field, initial[field.name]);
+      }
       else if (field.autoToday) base[field.name] = today();
       else if (field.autoNow) base[field.name] = nowLocal();
       else if (field.defaultValue !== undefined) base[field.name] = field.defaultValue;
       else base[field.name] = '';
     });
     setForm(base);
+    setError('');
   }, [normalized, initial]);
 
   useEffect(() => {
@@ -119,6 +124,17 @@ export default function ModalForm({ title, fields, initial, mode = 'create', onC
     }
   }
 
+  async function handleSave() {
+    setSaving(true);
+    setError('');
+    try {
+      await onSave(form);
+    } catch (err) {
+      setError(err.message);
+      setSaving(false);
+    }
+  }
+
   function renderField(field) {
     const value = form[field.name] ?? '';
     const disabled = Boolean(field.disabled || field.computedSum);
@@ -141,13 +157,17 @@ export default function ModalForm({ title, fields, initial, mode = 'create', onC
     return <input type={field.type || 'text'} step={field.step || (field.type === 'number' ? 'any' : undefined)} inputMode={field.type === 'number' ? 'decimal' : undefined} value={value} disabled={disabled} placeholder={field.placeholder || ''} onChange={e => change(field.name, e.target.value)} />;
   }
 
-  return <div className="modal-backdrop">
+  return <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
     <div className="modal">
       <div className="modal-head">
-        <div><div className="page-title">{title}</div><div className="page-sub">Los desplegables se cargan desde SQL Server. No se escribe el ID manualmente.</div></div>
-        <button className="btn btn-sm btn-ghost" onClick={onClose}><i className="ti ti-x" /></button>
+        <div>
+          <div className="page-title">{title}</div>
+          <div className="page-sub">Los desplegables se cargan desde SQL Server. No se escribe el ID manualmente.</div>
+        </div>
+        <button className="btn btn-sm btn-ghost" onClick={onClose} title="Cerrar"><i className="ti ti-x" /></button>
       </div>
       <div className="modal-body">
+        {error && <div className="alert error">{error}</div>}
         <div className="form-grid">
           {normalized.map(field => <div className="field" key={field.name}>
             <label>{field.label}</label>
@@ -156,8 +176,10 @@ export default function ModalForm({ title, fields, initial, mode = 'create', onC
           </div>)}
         </div>
         <div className="modal-actions">
-          <button className="btn btn-soft" onClick={onClose}>Cancelar</button>
-          <button className="btn btn-primary" onClick={() => onSave(form)}><i className="ti ti-device-floppy" />Guardar</button>
+          <button className="btn btn-soft" onClick={onClose} disabled={saving}>Cancelar</button>
+          <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+            <i className="ti ti-device-floppy" />{saving ? 'Guardando...' : 'Guardar'}
+          </button>
         </div>
       </div>
     </div>
