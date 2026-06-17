@@ -35,7 +35,8 @@ export default function Login({ onLogin }) {
       await clientRegister(register);
       setOk('Cuenta de cliente creada. Ahora inicia sesión con tu usuario y contraseña.');
       setMode('login');
-      setForm({ username: register.username, password: register.password });
+      setForm({ username: '', password: '' });
+      setRegister({ nro_documento_cliente: '', username: '', password: '' });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -60,13 +61,13 @@ export default function Login({ onLogin }) {
         <div className="field" style={{ marginBottom: 10 }}><label>Usuario</label><input value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} /></div>
         <div className="field" style={{ marginBottom: 14 }}><label>Contraseña</label><input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} /></div>
         <button className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>{loading ? 'Ingresando...' : 'Entrar'}</button>
-        <button type="button" className="btn btn-soft" style={{ width: '100%', marginTop: 10 }} onClick={() => { setError(''); setMode('register'); }}>Crear cuenta cliente</button>
+        <button type="button" className="btn btn-soft" style={{ width: '100%', marginTop: 10 }} onClick={() => { setError(''); setOk(''); setMode('register'); }}>Crear cuenta cliente</button>
       </> : <>
         <div className="field" style={{ marginBottom: 10 }}><label>Número de documento del cliente</label><input placeholder="CI/NIT registrado en clientes" value={register.nro_documento_cliente} onChange={e => setRegister({ ...register, nro_documento_cliente: e.target.value })} /></div>
         <div className="field" style={{ marginBottom: 10 }}><label>Usuario</label><input value={register.username} onChange={e => setRegister({ ...register, username: e.target.value })} /></div>
         <div className="field" style={{ marginBottom: 14 }}><label>Contraseña</label><input type="password" value={register.password} onChange={e => setRegister({ ...register, password: e.target.value })} /></div>
         <button className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>{loading ? 'Creando...' : 'Crear cuenta'}</button>
-        <button type="button" className="btn btn-soft" style={{ width: '100%', marginTop: 10 }} onClick={() => { setError(''); setMode('login'); }}>Volver al login</button>
+        <button type="button" className="btn btn-soft" style={{ width: '100%', marginTop: 10 }} onClick={() => { setError(''); setOk(''); setMode('login'); }}>Volver al login</button>
       </>}
     </form>
   </div>;
