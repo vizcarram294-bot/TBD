@@ -207,8 +207,8 @@ export default function ResourceTable({ config, permissions = [], user = null })
                 <div className="row-actions">
                   {config.details?.map(d => <button key={d.label} className="btn btn-sm btn-view" onClick={() => showDetails(row, d)}><i className="ti ti-eye" />{d.label}</button>)}
                   {config.paymentQR && <button className="btn btn-sm btn-ok" onClick={() => showQR(row)}><i className="ti ti-qrcode" />Pagar / QR</button>}
-                  {config.quickCreate && <button className="btn btn-sm btn-ok" onClick={() => setModal({ mode: 'quick', resource: config.quickCreate.resource, row: Object.fromEntries(Object.entries(row).filter(([k]) => config.quickCreate.fields?.some(f => f.name === k))) })}><i className="ti ti-plus" />{config.quickCreate.label}</button>}
-                  {canEdit && <button className="btn btn-sm btn-edit" onClick={() => setModal({ mode: 'edit', row, fields: config.fields })}><i className="ti ti-edit" />Editar</button>}
+                  {config.quickCreate && <button className="btn btn-sm btn-ok" onClick={() => setModal({ mode: 'quick', resource: config.quickCreate.resource, row: Object.fromEntries(Object.entries(row).filter(([k]) => config.quickCreate.fields?.some(f => (typeof f === 'string' ? f : f.name) === k))) })}><i className="ti ti-plus" />{config.quickCreate.label}</button>}
+                  {canEdit && <button className="btn btn-sm btn-edit" onClick={() => setModal({ mode: 'edit', row, fields: config.fields, resourceKey: config.key, resourceId: config.id })}><i className="ti ti-edit" />Editar</button>}
                   {canDelete && <button className="btn btn-sm btn-danger" onClick={() => del(row)}><i className="ti ti-trash" />Eliminar</button>}
                 </div>
               </td>
@@ -218,7 +218,16 @@ export default function ResourceTable({ config, permissions = [], user = null })
       </div>
     </>}
 
-    {modal && <ModalForm title={modal.mode === 'quick' ? config.quickCreate.label : (modal.row ? `Editar ${config.title}` : `Nuevo ${config.title}`)} fields={modal.fields || config.fields} initialData={modal.row} onSave={save} onCancel={() => setModal(null)} />}
+    {modal && <ModalForm 
+      title={modal.mode === 'quick' ? config.quickCreate.label : (modal.row ? `Editar ${config.title}` : `Nuevo ${config.title}`)} 
+      fields={modal.fields || config.fields} 
+      initial={modal.row || {}}
+      mode={modal.mode === 'quick' ? 'create' : modal.mode}
+      resourceKey={modal.resourceKey || config.key}
+      resourceId={modal.resourceId || config.id}
+      onClose={() => setModal(null)}
+      onSave={save}
+    />}
     {detailModal && <DetailModal title={detailModal.title} data={detailModal.data} onClose={() => setDetailModal(null)} />}
   </div>;
 }
