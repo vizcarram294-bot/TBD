@@ -145,8 +145,7 @@ async function getIdEstadoEmpleadoActivo(pool) {
 }
 
 async function getIdEstadoProyectoInicial(pool) {
-  // Selecciona el estado inicial del proyecto preferentemente por coincidencias con 'inicio' o 'aprob'.
-  const result = await pool.request().query(`SELECT TOP 1 id_estado_proyecto FROM estados_proyecto WHERE LOWER(nombre_estado) LIKE '%inicio%' OR LOWER(nombre_estado) LIKE '%aprob%' ORDER BY id_estado_proyecto`);
+  const result = await pool.request().query(`SELECT TOP 1 id_estado_proyecto FROM estados_proyecto WHERE LOWER(nombre_estado) LIKE '%inicio%' OR LOWER(nombre_estado) LIKE '%aprob%' OR LOWER(nombre_estado) LIKE '%aprobado%' ORDER BY id_estado_proyecto`);
   return result.recordset[0]?.id_estado_proyecto ?? null;
 }
 
@@ -356,5 +355,216 @@ async function runAfterCreate(resourceName, pool, inserted, body) {
                                      WHEN stock_maximo_material IS NOT NULL AND stock_actual_material - @cantidad >= stock_maximo_material THEN 'ALTO'
                                      ELSE 'NORMAL' END
               WHERE id_material = @id_material;`);
+  }
+}
+
+async function runAfterUpdate(resourceName, pool, id, data) {
+  if (resourceName === 'usuarios' && data.id_rol) {
+    await pool.request()
+      .input('id_usuario', sql.Int, id)
+      .input('id_rol', sql.Int, Number(data.id_rol))
+      .query(`DELETE FROM usuario_rol WHERE id_usuario=@id_usuario;
+              INSERT INTO usuario_rol(id_usuario, id_rol) VALUES(@id_usuario, @id_rol);`);
+  }
+
+  if (resourceName === 'materiales' && Object.prototype.hasOwnProperty.call(data, 'precio_unitario')) {
+    await pool.request()
+      .input('id_material', sql.Int, id)
+      .input('precio', sql.Decimal(10,2), Number(data.precio_unitario || 0))
+      .query(`INSERT INTO costos_material(id_material, precio_unitario, fecha_actualizacion)
+              VALUES(@id_material, @precio, CAST(GETDATE() AS date))`);
+  }
+}
+
+async function cascadeDelete(pool, type, id, user) {
+  const r = addAuditInputs(pool.request(), user).input('id', sql.Int, Number(id));
+  if (type === 'empleados') {
+    await r.query(`${auditSql}
+      DELETE FROM usuario_rol WHERE id_usuario IN (SELECT id_usuario FROM usuarios WHERE id_empleado = @id);
+      DELETE FROM usuarios WHERE id_empleado = @id;
+      DELETE FROM proyecto_mano_obra WHERE id_empleado = @id;
+      DELETE FROM proyecto_empleado WHERE id_empleado = @id;
+      DELETE FROM nomina_pagos WHERE id_empleado = @id;
+      DELETE FROM control_asistencia WHERE id_empleado = @id;
+      DELETE FROM contrato_empleado WHERE id_empleado = @id;
+      DELETE FROM empleados WHERE id_empleado = @id;`);
+    return;
+  }
+
+  if (type === 'proyectos') {
+    await r.query(`${auditSql}
+      DELETE FROM pago_subcontratista WHERE id_contrato_sub IN (SELECT id_contrato_sub FROM contrato_subcontratista WHERE id_proyecto = @id);
+      DELETE FROM contrato_subcontratista WHERE id_proyecto = @id;
+      DELETE FROM pagos_proveedor WHERE id_proyecto = @id;
+      DELETE FROM pagos_cliente WHERE id_proyecto = @id;
+      DELETE FROM plan_pagos WHERE id_proyecto = @id;
+      DELETE FROM proyecto_mano_obra WHERE id_proyecto = @id;
+      DELETE FROM proyecto_empleado WHERE id_proyecto = @id;
+      DELETE FROM movimiento_inventario WHERE id_proyecto = @id;
+      DELETE FROM proyecto_material WHERE id_proyecto = @id;
+      DELETE FROM avance_proyecto WHERE id_proyecto = @id;
+      DELETE FROM flujo_estado_proyecto WHERE id_proyecto = @id;
+      DELETE FROM fases_proyecto WHERE id_proyecto = @id;
+      DELETE FROM liquidaciones WHERE id_proyecto = @id;
+      DELETE FROM proyectos WHERE id_proyecto = @id;`);
+    return;
+  }
+
+  if (type === 'proveedores') {
+    await r.query(`${auditSql}
+      DELETE FROM pagos_proveedor WHERE id_proveedor = @id;
+      DELETE FROM movimiento_inventario WHERE id_material IN (SELECT id_material FROM materiales WHERE id_proveedor = @id);
+      DELETE FROM proyecto_material WHERE id_material IN (SELECT id_material FROM materiales WHERE id_proveedor = @id);
+      DELETE FROM inventario_material WHERE id_material IN (SELECT id_material FROM materiales WHERE id_proveedor = @id);
+      DELETE FROM costos_material WHERE id_material IN (SELECT id_material FROM materiales WHERE id_proveedor = @id);
+      DELETE FROM materiales WHERE id_proveedor = @id;
+      DELETE FROM proveedores WHERE id_proveedor = @id;`);
+    return;
+  }
+}
+
+export async function listResource(req, res, next) {
+  try {
+    const def = getResourceOrThrow(req.params.resource);
+    const pool = await getPool();
+    const search = String(req.query.search || '').trim();
+    const limit = Math.min(Number(req.query.limit || 200), 1000);
+    const request = pool.request().input('limit', sql.Int, limit);
+    const conditions = [];
+    if (search) {
+      request.input('search', sql.NVarChar, `%${search}%`);
+      conditions.push(buildSearchCondition(def));
+    }
+    if (isCliente(req.user)) {
+      const clientFilter = clientFilterCondition(req.params.resource);
+      if (!clientFilter) return res.json([]);
+      request.input('auth_cliente', sql.Int, Number(req.user?.id_cliente || 0));
+      conditions.push(clientFilter);
+    }
+    const where = buildWhere(conditions);
+    const selectSafe = stripTrailingOrderBy(def.select);
+    const query = `SELECT TOP (@limit) * FROM (${selectSafe}) base ${where} ORDER BY base.[${def.id}] DESC`;
+    const result = await request.query(query);
+    res.json(result.recordset);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getResource(req, res, next) {
+  try {
+    const def = getResourceOrThrow(req.params.resource);
+    const pool = await getPool();
+    const request = pool.request().input('id', sql.Int, Number(req.params.id));
+    const conditions = [`base.[${def.id}] = @id`];
+    if (isCliente(req.user)) {
+      const clientFilter = clientFilterCondition(req.params.resource);
+      if (!clientFilter) return res.status(403).json({ message: 'El rol Cliente no puede ver este recurso.' });
+      request.input('auth_cliente', sql.Int, Number(req.user?.id_cliente || 0));
+      conditions.push(clientFilter);
+    }
+    const selectSafe = stripTrailingOrderBy(def.select);
+    const result = await request.query(`SELECT * FROM (${selectSafe}) base ${buildWhere(conditions)}`);
+    if (!result.recordset[0]) return res.status(404).json({ message: 'Registro no encontrado' });
+    res.json(result.recordset[0]);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function createResource(req, res, next) {
+  try {
+    const def = getResourceOrThrow(req.params.resource);
+    if (def.allowCreate === false) return res.status(403).json({ message: 'Este módulo es historial/automático: no permite añadir registros manualmente.' });
+
+    const pool = await getPool();
+    const body = await preprocessBody(req.params.resource, req.body || {}, 'create', pool);
+    const cols = def.columns.filter((c) => Object.prototype.hasOwnProperty.call(body, c) && body[c] !== undefined);
+    if (!cols.length) return res.status(400).json({ message: 'No se enviaron campos válidos' });
+
+    const request = addAuditInputs(pool.request(), req.user);
+    cols.forEach((col) => request.input(col, body[col]));
+    const columnsSql = cols.map((c) => `[${c}]`).join(', ');
+    const valuesSql = cols.map((c) => `@${c}`).join(', ');
+
+    // IMPORTANTE SQL SERVER:
+    // No se puede usar "OUTPUT INSERTED.*" directo si la tabla tiene triggers activos.
+    // Por eso guardamos primero el ID insertado en una tabla variable con OUTPUT ... INTO
+    // y recién después consultamos el registro. Esto permite que funcionen los triggers
+    // de auditoría y automatización sin bloquear formularios como usuarios, inventario, etc.
+    const query = `
+      ${auditSql}
+      DECLARE @insertedIds TABLE ([id] INT);
+      INSERT INTO [${def.table}] (${columnsSql})
+      OUTPUT INSERTED.[${def.id}] INTO @insertedIds
+      VALUES (${valuesSql});
+
+      SELECT t.*
+      FROM [${def.table}] t
+      INNER JOIN @insertedIds i ON i.[id] = t.[${def.id}];
+    `;
+    const result = await request.query(query);
+    const inserted = result.recordset[0];
+    await runAfterCreate(req.params.resource, pool, inserted, body);
+    await writeAudit(pool, def.table, 'INSERT', req.user, null, inserted);
+    res.status(201).json(inserted);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateResource(req, res, next) {
+  try {
+    const def = getResourceOrThrow(req.params.resource);
+    if (def.allowUpdate === false) return res.status(403).json({ message: 'Este módulo es historial/automático: no permite edición manual.' });
+
+    const pool = await getPool();
+    const oldRecord = await getRawRecord(pool, def, req.params.id);
+    const body = await preprocessBody(req.params.resource, req.body || {}, 'update', pool);
+    const cols = def.columns.filter((c) => Object.prototype.hasOwnProperty.call(body, c));
+    if (!cols.length && !def.virtualColumns?.some((c) => Object.prototype.hasOwnProperty.call(body, c))) return res.status(400).json({ message: 'No se enviaron campos válidos' });
+
+    let record = { id: Number(req.params.id) };
+    if (cols.length) {
+      const request = addAuditInputs(pool.request(), req.user).input('id', sql.Int, Number(req.params.id));
+      cols.forEach((col) => request.input(col, body[col]));
+      const setSql = cols.map((c) => `[${c}] = @${c}`).join(', ');
+      const query = `${auditSql} UPDATE [${def.table}] SET ${setSql} WHERE [${def.id}] = @id; SELECT * FROM [${def.table}] WHERE [${def.id}] = @id;`;
+      const result = await request.query(query);
+      record = result.recordset[0] || record;
+    }
+    await runAfterUpdate(req.params.resource, pool, Number(req.params.id), body);
+    await writeAudit(pool, def.table, 'UPDATE', req.user, oldRecord, record);
+    res.json(record);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function deleteResource(req, res, next) {
+  try {
+    const def = getResourceOrThrow(req.params.resource);
+    if (def.allowDelete === false) return res.status(403).json({ message: 'Este módulo es historial/automático: no permite eliminar registros.' });
+
+    const pool = await getPool();
+    const oldRecord = await getRawRecord(pool, def, req.params.id);
+    if (def.cascadeDelete) {
+      await cascadeDelete(pool, def.cascadeDelete, req.params.id, req.user);
+      await writeAudit(pool, def.table, 'DELETE', req.user, oldRecord, null);
+      return res.json({ ok: true, mode: 'cascade-delete' });
+    }
+
+    const request = addAuditInputs(pool.request(), req.user).input('id', sql.Int, Number(req.params.id));
+    if (def.softDelete) {
+      request.input('value', def.softDelete.value);
+      await request.query(`${auditSql} UPDATE [${def.table}] SET [${def.softDelete.column}] = @value WHERE [${def.id}] = @id`);
+      await writeAudit(pool, def.table, 'UPDATE', req.user, oldRecord, { ...oldRecord, [def.softDelete.column]: def.softDelete.value });
+      return res.json({ ok: true, mode: 'soft-delete' });
+    }
+    await request.query(`${auditSql} DELETE FROM [${def.table}] WHERE [${def.id}] = @id`);
+    await writeAudit(pool, def.table, 'DELETE', req.user, oldRecord, null);
+    res.json({ ok: true, mode: 'delete' });
+  } catch (error) {
+    next(error);
   }
 }
