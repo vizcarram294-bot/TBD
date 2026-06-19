@@ -322,7 +322,7 @@ async function preprocessBody(resourceName, body, mode, pool) {
     }
     if (hasFinalEstado(data.estado_contrato) && !data.fecha_fin) data.fecha_fin = today();
   }
-  if (resourceName === 'pago_subcontratista' and mode === 'create') data.fecha_pago = data.fecha_pago || today();
+  if (resourceName === 'pago_subcontratista' && mode === 'create') data.fecha_pago = data.fecha_pago || today();
 
   return data;
 }
@@ -356,119 +356,5 @@ async function runAfterCreate(resourceName, pool, inserted, body) {
                                      WHEN stock_maximo_material IS NOT NULL AND stock_actual_material - @cantidad >= stock_maximo_material THEN 'ALTO'
                                      ELSE 'NORMAL' END
               WHERE id_material = @id_material;`);
-  }
-}
-
-async function runAfterUpdate(resourceName, pool, id, data) {
-  if (resourceName === 'usuarios' && data.id_rol) {
-    await pool.request()
-      .input('id_usuario', sql.Int, id)
-      .input('id_rol', sql.Int, Number(data.id_rol))
-      .query(`DELETE FROM usuario_rol WHERE id_usuario=@id_usuario;
-              INSERT INTO usuario_rol(id_usuario, id_rol) VALUES(@id_usuario, @id_rol);`);
-  }
-
-  if (resourceName === 'materiales' && Object.prototype.hasOwnProperty.call(data, 'precio_unitario')) {
-    await pool.request()
-      .input('id_material', sql.Int, id)
-      .input('precio', sql.Decimal(10,2), Number(data.precio_unitario || 0))
-      .query(`INSERT INTO costos_material(id_material, precio_unitario, fecha_actualizacion)
-              VALUES(@id_material, @precio, CAST(GETDATE() AS date))`);
-  }
-}
-
-async function cascadeDelete(pool, type, id, user) {
-  const r = addAuditInputs(pool.request(), user).input('id', sql.Int, Number(id));
-  if (type === 'empleados') {
-    await r.query(`${auditSql}
-      DELETE FROM usuario_rol WHERE id_usuario IN (SELECT id_usuario FROM usuarios WHERE id_empleado = @id);
-      DELETE FROM usuarios WHERE id_empleado = @id;
-      DELETE FROM proyecto_mano_obra WHERE id_empleado = @id;
-      DELETE FROM proyecto_empleado WHERE id_empleado = @id;
-      DELETE FROM nomina_pagos WHERE id_empleado = @id;
-      DELETE FROM control_asistencia WHERE id_empleado = @id;
-      DELETE FROM contrato_empleado WHERE id_empleado = @id;
-      DELETE FROM empleados WHERE id_empleado = @id;`);
-    return;
-  }
-
-  if (type === 'proyectos') {
-    await r.query(`${auditSql}
-      DELETE FROM pago_subcontratista WHERE id_contrato_sub IN (SELECT id_contrato_sub FROM contrato_subcontratista WHERE id_proyecto = @id);
-      DELETE FROM contrato_subcontratista WHERE id_proyecto = @id;
-      DELETE FROM pagos_proveedor WHERE id_proyecto = @id;
-      DELETE FROM pagos_cliente WHERE id_proyecto = @id;
-      DELETE FROM plan_pagos WHERE id_proyecto = @id;
-      DELETE FROM proyecto_mano_obra WHERE id_proyecto = @id;
-      DELETE FROM proyecto_empleado WHERE id_proyecto = @id;
-      DELETE FROM movimiento_inventario WHERE id_proyecto = @id;
-      DELETE FROM proyecto_material WHERE id_proyecto = @id;
-      DELETE FROM avance_proyecto WHERE id_proyecto = @id;
-      DELETE FROM flujo_estado_proyecto WHERE id_proyecto = @id;
-      DELETE FROM fases_proyecto WHERE id_proyecto = @id;
-      DELETE FROM liquidaciones WHERE id_proyecto = @id;
-      DELETE FROM proyectos WHERE id_proyecto = @id;`);
-    return;
-  }
-
-  if (type === 'proveedores') {
-    await r.query(`${auditSql}
-      DELETE FROM pagos_proveedor WHERE id_proveedor = @id;
-      DELETE FROM movimiento_inventario WHERE id_material IN (SELECT id_material FROM materiales WHERE id_proveedor = @id);
-      DELETE FROM proyecto_material WHERE id_material IN (SELECT id_material FROM materiales WHERE id_proveedor = @id);
-      DELETE FROM inventario_material WHERE id_material IN (SELECT id_material FROM materiales WHERE id_proveedor = @id);
-      DELETE FROM costos_material WHERE id_material IN (SELECT id_material FROM materiales WHERE id_proveedor = @id);
-      DELETE FROM materiales WHERE id_proveedor = @id;
-      DELETE FROM proveedores WHERE id_proveedor = @id;`);
-    return;
-  }
-}
-
-export async function listResource(req, res, next) {
-  try {
-    const def = getResourceOrThrow(req.params.resource);
-    const pool = await getPool();
-    const search = String(req.query.search || '').trim();
-    const limit = Math.min(Number(req.query.limit || 200), 1000);
-    const request = pool.request().input('limit', sql.Int, limit);
-    const conditions = [];
-    if (search) {
-      request.input('search', sql.NVarChar, `%${search}%`);
-      conditions.push(buildSearchCondition(def));
-    }
-    if (isCliente(req.user)) {
-      const clientFilter = clientFilterCondition(req.params.resource);
-      if (!clientFilter) return res.json([]);
-      request.input('auth_cliente', sql.Int, Number(req.user?.id_cliente || 0));
-      conditions.push(clientFilter);
-    }
-    const where = buildWhere(conditions);
-    const selectSafe = stripTrailingOrderBy(def.select);
-    const query = `SELECT TOP (@limit) * FROM (${selectSafe}) base ${where} ORDER BY base.[${def.id}] DESC`;
-    const result = await request.query(query);
-    res.json(result.recordset);
-  } catch (error) {
-    next(error);
-  }
-}
-
-export async function getResource(req, res, next) {
-  try {
-    const def = getResourceOrThrow(req.params.resource);
-    const pool = await getPool();
-    const request = pool.request().input('id', sql.Int, Number(req.params.id));
-    const conditions = [`base.[${def.id}] = @id`];
-    if (isCliente(req.user)) {
-      const clientFilter = clientFilterCondition(req.params.resource);
-      if (!clientFilter) return res.status(403).json({ message: 'El rol Cliente no puede ver este recurso.' });
-      request.input('auth_cliente', sql.Int, Number(req.user?.id_cliente || 0));
-      conditions.push(clientFilter);
-    }
-    const selectSafe = stripTrailingOrderBy(def.select);
-    const result = await request.query(`SELECT * FROM (${selectSafe}) base ${buildWhere(conditions)}`);
-    if (!result.recordset[0]) return res.status(404).json({ message: 'Registro no encontrado' });
-    res.json(result.recordset[0]);
-  } catch (error) {
-    next(error);
   }
 }
