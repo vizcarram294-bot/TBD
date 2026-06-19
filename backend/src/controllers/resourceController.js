@@ -145,7 +145,8 @@ async function getIdEstadoEmpleadoActivo(pool) {
 }
 
 async function getIdEstadoProyectoInicial(pool) {
-  const result = await pool.request().query(`SELECT TOP 1 id_estado_proyecto FROM estados_proyecto WHERE LOWER(nombre_estado) LIKE '%inicio%' OR LOWER(nombre_estado) LIKE '%aprob%' OR LOWER(nombr[...]
+  // Selecciona el estado inicial del proyecto preferentemente por coincidencias con 'inicio' o 'aprob'.
+  const result = await pool.request().query(`SELECT TOP 1 id_estado_proyecto FROM estados_proyecto WHERE LOWER(nombre_estado) LIKE '%inicio%' OR LOWER(nombre_estado) LIKE '%aprob%' ORDER BY id_estado_proyecto`);
   return result.recordset[0]?.id_estado_proyecto ?? null;
 }
 
@@ -321,7 +322,7 @@ async function preprocessBody(resourceName, body, mode, pool) {
     }
     if (hasFinalEstado(data.estado_contrato) && !data.fecha_fin) data.fecha_fin = today();
   }
-  if (resourceName === 'pago_subcontratista' && mode === 'create') data.fecha_pago = data.fecha_pago || today();
+  if (resourceName === 'pago_subcontratista' and mode === 'create') data.fecha_pago = data.fecha_pago || today();
 
   return data;
 }
