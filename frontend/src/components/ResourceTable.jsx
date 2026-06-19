@@ -99,16 +99,22 @@ export default function ResourceTable({ config, permissions = [], user = null })
   const wrapRef = useRef(null);
   const topScrollRef = useRef(null);
   const tableRef = useRef(null);
-  const cols = useMemo(() => visibleColumns(rows, config.id, config.key), [rows, config.id, config.key]);
 
-  const canAdd = !config.readonly && !config.noAdd && canDo(permissions, config.key, 'INSERT', user);
-  const canEdit = !config.readonly && !config.noEdit && canDo(permissions, config.key, 'UPDATE', user);
-  const canDelete = !config.readonly && !config.noDelete && canDo(permissions, config.key, 'DELETE', user);
+  // Map frontend resource keys to API resource names when they diverge.
+  // Fix: algunos módulos en frontend usan 'orden_pedido' pero el backend espera 'orden_compra'.
+  const apiKey = useMemo(() => config.key === 'orden_pedido' ? 'orden_compra' : config.key, [config.key]);
+  const apiId = useMemo(() => config.key === 'orden_pedido' ? 'id_orden_compra' : config.id, [config.key, config.id]);
+
+  const cols = useMemo(() => visibleColumns(rows, apiId, apiKey), [rows, apiId, apiKey]);
+
+  const canAdd = !config.readonly && !config.noAdd && canDo(permissions, apiKey, 'INSERT', user);
+  const canEdit = !config.readonly && !config.noEdit && canDo(permissions, apiKey, 'UPDATE', user);
+  const canDelete = !config.readonly && !config.noDelete && canDo(permissions, apiKey, 'DELETE', user);
 
   async function load(customSearch = search) {
     setLoading(true);
     setError('');
-    try { setRows(await list(config.key, customSearch)); }
+    try { setRows(await list(apiKey, customSearch)); }
     catch (err) { setError(err.message); }
     finally { setLoading(false); }
   }
@@ -129,9 +135,9 @@ export default function ResourceTable({ config, permissions = [], user = null })
 
   async function save(form) {
     try {
-      if (modal.mode === 'quick') await create(modal.resource, form);
-      else if (modal.row) await update(config.key, modal.row[config.id], form);
-      else await create(config.key, form);
+      if (modal.mode === 'quick') await create(modal.resource || apiKey, form);
+      else if (modal.row) await update(apiKey, modal.row[apiId], form);
+      else await create(apiKey, form);
       setModal(null);
       await load();
     } catch (err) { alert(err.message); }
@@ -139,13 +145,13 @@ export default function ResourceTable({ config, permissions = [], user = null })
 
   async function del(row) {
     if (!confirm('¿Seguro que deseas eliminar este registro?')) return;
-    try { await remove(config.key, row[config.id]); await load(); }
+    try { await remove(apiKey, row[apiId]); await load(); }
     catch (err) { alert(err.message); }
   }
 
   async function showDetails(row, item) {
     try {
-      const data = await details(item.path(row[config.id]));
+      const data = await details(item.path(row[apiId]));
       setDetailModal({ title: `${item.label} — ${config.title}`, data });
     } catch (err) { alert(err.message); }
   }
@@ -201,14 +207,14 @@ export default function ResourceTable({ config, permissions = [], user = null })
           <thead><tr>{cols.map(c => <th key={c}>{c}</th>)}<th>Acciones</th></tr></thead>
           <tbody>
             {!rows.length && <tr><td colSpan={cols.length + 1} className="empty">No hay registros</td></tr>}
-            {rows.map(row => <tr key={row[config.id]}>
+            {rows.map(row => <tr key={row[apiId]}>
               {cols.map(c => <td key={c}>{formatCell(c, row[c])}</td>)}
               <td>
                 <div className="row-actions">
                   {config.details?.map(d => <button key={d.label} className="btn btn-sm btn-view" onClick={() => showDetails(row, d)}><i className="ti ti-eye" />{d.label}</button>)}
                   {config.paymentQR && <button className="btn btn-sm btn-ok" onClick={() => showQR(row)}><i className="ti ti-qrcode" />Pagar / QR</button>}
-                  {config.quickCreate && <button className="btn btn-sm btn-ok" onClick={() => setModal({ mode: 'quick', resource: config.quickCreate.resource, row: Object.fromEntries(Object.entries(row).filter(([k]) => config.quickCreate.fields?.some(f => (typeof f === 'string' ? f : f.name) === k))) })}><i className="ti ti-plus" />{config.quickCreate.label}</button>}
-                  {canEdit && <button className="btn btn-sm btn-edit" onClick={() => setModal({ mode: 'edit', row, fields: config.fields, resourceKey: config.key, resourceId: config.id })}><i className="ti ti-edit" />Editar</button>}
+                  {config.quickCreate && <button className="btn btn-sm btn-ok" onClick={() => setModal({ mode: 'quick', resource: config.quickCreate.resource, row: Object.fromEntries(Object.entries(row).filter(([k]) => k.startsWith('id_'))), fields: config.quickCreate.fields })}><i className="ti ti-plus" />{config.quickCreate.label}</button>}
+                  {canEdit && <button className="btn btn-sm btn-edit" onClick={() => setModal({ mode: 'edit', row, fields: config.fields, resourceKey: apiKey, resourceId: apiId })}><i className="ti ti-edit" />Editar</button>}
                   {canDelete && <button className="btn btn-sm btn-danger" onClick={() => del(row)}><i className="ti ti-trash" />Eliminar</button>}
                 </div>
               </td>
@@ -223,8 +229,8 @@ export default function ResourceTable({ config, permissions = [], user = null })
       fields={modal.fields || config.fields} 
       initial={modal.row || {}}
       mode={modal.mode === 'quick' ? 'create' : modal.mode}
-      resourceKey={modal.resourceKey || config.key}
-      resourceId={modal.resourceId || config.id}
+      resourceKey={modal.resourceKey || apiKey}
+      resourceId={modal.resourceId || apiId}
       onClose={() => setModal(null)}
       onSave={save}
     />}
