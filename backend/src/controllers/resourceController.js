@@ -373,6 +373,61 @@ async function cascadeDelete(pool, resourceName, id, user) {
   await pool.request().input('id', sql.Int, Number(id)).query(`${auditSql}DELETE FROM [${def.table}] WHERE [${def.id}] = @id;`);
 }
 
+// Infieres tipos SQL básicos por nombre de columna y aplica request.input con conversión mínima.
+function applyInputsFromData(request, data, def) {
+  for (const [k, raw] of Object.entries(data || {})) {
+    let value = raw === undefined ? null : raw;
+
+    const name = String(k).toLowerCase();
+
+    // Detectar booleano
+    if (typeof value === 'boolean') {
+      request.input(k, sql.Bit, value ? 1 : 0);
+      continue;
+    }
+
+    // IDs
+    if (name === String(def?.id).toLowerCase() || name.startsWith('id_') || name.endsWith('_id')) {
+      request.input(k, sql.Int, value === null ? null : Number(value));
+      continue;
+    }
+
+    // Fechas
+    if (name.includes('fecha') || name.includes('date') || name.endsWith('_at')) {
+      request.input(k, sql.Date, value === null ? null : value);
+      continue;
+    }
+
+    // Horas/tiempos
+    if (name.includes('hora') || name.includes('time')) {
+      request.input(k, sql.VarChar(16), value === null ? null : String(value));
+      continue;
+    }
+
+    // Montos, precios, porcentajes, cantidades
+    if (/(precio|monto|costo|tarifa|subtotal|porcentaje|cantidad|monto|total)/i.test(name)) {
+      const num = value === null ? null : Number(value);
+      request.input(k, sql.Decimal(18,2), num);
+      continue;
+    }
+
+    // Emails
+    if (name.includes('email')) {
+      request.input(k, sql.NVarChar(256), value === null ? null : String(value));
+      continue;
+    }
+
+    // Telefonos
+    if (name.includes('telefono') || name.includes('telefono')) {
+      request.input(k, sql.NVarChar(50), value === null ? null : String(value));
+      continue;
+    }
+
+    // Por defecto: texto largo
+    request.input(k, sql.NVarChar(sql.MAX), value === null ? null : String(value));
+  }
+}
+
 // Crear registro genérico
 export async function createResource(req, res, next) {
   try {
@@ -384,7 +439,7 @@ export async function createResource(req, res, next) {
     if (!keys.length) return res.status(400).json({ message: 'Sin datos para crear.' });
 
     const request = addAuditInputs(pool.request(), req.user);
-    for (const k of keys) request.input(k, sql.VarChar(sql.MAX), data[k]);
+    applyInputsFromData(request, data, def);
 
     const cols = keys.map(k => `[${k}]`).join(', ');
     const vals = keys.map(k => `@${k}`).join(', ');
@@ -421,7 +476,9 @@ export async function updateResource(req, res, next) {
     if (!keys.length) return res.status(400).json({ message: 'Sin datos para actualizar.' });
 
     const request = addAuditInputs(pool.request(), req.user).input('id', sql.Int, id);
-    const sets = keys.map(k => { request.input(k, sql.VarChar(sql.MAX), data[k]); return `[${k}] = @${k}`; }).join(', ');
+    applyInputsFromData(request, data, def);
+
+    const sets = keys.map(k => `[${k}] = @${k}`).join(', ');
 
     const updateSql = `${auditSql}
 UPDATE [${def.table}] SET ${sets} WHERE [${def.id}] = @id;
