@@ -39,15 +39,15 @@ export const modules = {
         autoDate('fecha_ingreso_empleado','Fecha de ingreso', { autoToday: true, required: true }),
         number('tarifa_hora_actual','Tarifa por hora actual', { help: 'Se actualiza automáticamente con el historial de pagos.' }),
         select('id_estado_empleado','Estado empleado','id_estado_empleado', { hideOnCreate: true, help: 'Al crear queda activo por defecto. Solo se cambia al editar.' })
-      ], details: [{ label: 'Resumen empleado', path: id => `/empleados/${id}/resumen` }], quickCreate: { label: 'Registrar asistencia', resource: 'control_asistencia', fields: [text('ci_empleado','CI del empleado', { placeholder: 'Ej: 8564321' })] } },
-      { key: 'empleado_tipo_pago_historial', title: 'Historial tipo de pago/tarifa', id: 'id_historial', fields: [
+      ], details: [{ label: 'Resumen empleado', path: id => `/empleados/${id}/resumen` }], quickCreate: { label: 'Registrar asistencia', resource: 'control_asistencia', fields: [text('ci_empleado','CI del empleado', { placeholder: 'Ej: 8564321' }), select('id_empleado','Empleado','id_empleado'), date('fecha_asistencia','Fecha'), staticSelect('estado','Estado',asistencia), area('observaciones','Observaciones')] } },
+       { key: 'empleado_tipo_pago_historial', title: 'Historial tipo de pago/tarifa', id: 'id_historial', fields: [
         select('id_empleado','Empleado','id_empleado'), select('id_tipo_pago','Tipo de pago','id_tipo_pago'), 
         number('tarifa_hora','Tarifa por hora'), number('salario_base','Salario base mensual', { help: 'Si aplica pago fijo.' }),
         date('fecha_inicio','Fecha inicio'), date('fecha_fin','Fecha fin', { help: 'Dejar vacío si es vigente.' }),
         area('motivo','Motivo del cambio', { help: 'Ej: Aumento por desempeño, Cambio de puesto.' })
       ], readonly: true, lockMessage: 'Se registra automáticamente al cambiar tipo de pago.' },
-      { key: 'contrato_empleado', title: 'Contratos de empleado', id: 'id_contrato', fields: [select('id_empleado','Empleado','id_empleado'), select('id_tipo_contrato','Tipo contrato','id_tipo_contrato'), select('id_tipo_pago','Tipo de pago','id_tipo_pago', { required: true }), number('tarifa','Tarifa', { help: 'Tarifa por hora o salario, según el tipo de pago.' }), date('fecha_inicio','Fecha inicio'), date('fecha_fin','Fecha fin', { help: 'Dejar vacío si sigue vigente.' }), staticSelect('estado_contrato','Estado contrato',estadoContrato)] },
-      { key: 'control_asistencia', title: 'Asistencia de trabajadores', id: 'id_asistencia', fields: [text('ci_empleado','CI del empleado', { placeholder: 'Ej: 8564321' }), select('id_empleado','Empleado','id_empleado'), date('fecha_asistencia','Fecha'), staticSelect('estado_asistencia','Estado asistencia',asistencia), area('observaciones','Observaciones')] },
+      { key: 'contrato_empleado', title: 'Contratos de empleado', id: 'id_contrato', fields: [select('id_empleado','Empleado','id_empleado'), select('id_tipo_contrato','Tipo contrato','id_tipo_contrato'), date('fecha_inicio','Fecha inicio'), date('fecha_fin','Fecha fin', { help: 'Si aplica.' }), area('descripcion','Descripción'), staticSelect('estado','Estado',estadoContrato)] },
+      { key: 'control_asistencia', title: 'Asistencia de trabajadores', id: 'id_asistencia', fields: [text('ci_empleado','CI del empleado', { placeholder: 'Ej: 8564321' }), select('id_empleado','Empleado','id_empleado'), date('fecha_asistencia','Fecha'), staticSelect('estado','Estado',asistencia), area('observaciones','Observaciones')] },
       { key: 'asistencia_diaria_resumen', title: 'Resumen diario de asistencia', id: 'id_resumen', fields: [
         select('id_empleado','Empleado','id_empleado'), date('fecha_resumen','Fecha'), 
         number('minutos_retrasados','Minutos retrasados'), number('horas_trabajadas','Horas trabajadas'),
@@ -55,7 +55,6 @@ export const modules = {
         number('descuento_aplicado','Descuento aplicado', { disabled: true, help: 'Calculado automáticamente: -8 por hora, -4 por media hora.' }),
         area('observaciones','Observaciones')
       ] },
-      { key: 'proyecto_empleado', title: 'Asignación empleado a proyecto', id: 'id_proyecto_empleado', fields: [select('id_proyecto','Proyecto','id_proyecto'), select('id_empleado','Empleado','id_empleado'), date('fecha_asignacion','Fecha asignación')] },
       { key: 'proyecto_mano_obra', title: 'Mano de obra por proyecto / historial', id: 'id_mano_obra', fields: [], readonly: true, lockMessage: 'Historial automático de mano de obra asignada a proyectos.' },
       { key: 'nomina_resumen_mensual', title: 'Nómina resumen mensual (Cálculos)', id: 'id_nomina_resumen', fields: [
         select('id_empleado','Empleado','id_empleado'), text('mes_year','Mes y Año (YYYY-MM)', { placeholder: '2026-06' }),
@@ -76,7 +75,7 @@ export const modules = {
         number('monto_descuento','Monto descuento'), date('fecha_descuento','Fecha del descuento'),
         area('motivo','Motivo del descuento')
       ] },
-      { key: 'nomina_pagos', title: 'Pagos de empleados / nómina', id: 'id_nomina', noEdit: true, noDelete: true, fields: [select('id_empleado','Empleado','id_empleado'), select('id_periodo_pago','Período pago','id_periodo_pago'), date('fecha_pago','Fecha pago'), number('monto_pagado','Monto pagado')] },
+      { key: 'nomina_pagos', title: 'Pagos de empleados / nómina', id: 'id_nomina', noEdit: true, noDelete: true, fields: [select('id_empleado','Empleado','id_empleado'), select('id_periodo_pago','Periodo pago','id_periodo_pago'), number('monto_neto','Monto a pagar'), number('anticipo','Anticipo'), number('monto_final','Monto final', { disabled: true }), staticSelect('metodo_pago','Método pago',metodosPago), date('fecha_pago','Fecha pago'), area('observaciones','Observaciones')] },
     ]
   },
 
@@ -94,13 +93,13 @@ export const modules = {
         select('id_cliente_cotizacion','Cliente','id_cliente_cotizacion'), number('presupuesto_cliente','Presupuesto cliente'),
         area('ubicacion_obra','Información de la construcción / ubicación'), number('metros_cuadrados','Metros cuadrados'), number('numero_pisos','Número de pisos'), text('tiempo_estimado','Tiempo estimado'),
         number('costo_estimado_materiales','Costo materiales'), number('costo_estimado_mano_obra','Costo mano de obra'), number('otros_costos_estimados','Otros costos'),
-        number('subtotal_estimado','Subtotal', { disabled: true, computedSum: ['costo_estimado_materiales','costo_estimado_mano_obra','otros_costos_estimados'], help: 'Se calcula automáticamente sumando costos.' }),
+        number('subtotal_estimado','Subtotal', { disabled: true, computedSum: ['costo_estimado_materiales','costo_estimado_mano_obra','otros_costos_estimados'], help: 'Se calcula automáticamente como suma de costos.' }),
         number('margen_ganancia','Margen ganancia'), number('precio_final','Precio final'),
         autoDate('fecha_cotizacion','Fecha cotización', { disabled: true }), staticSelect('estado_cotizacion','Estado cotización',estadoCotizacion), area('observaciones','Observaciones')
       ] },
-      { key: 'pagos_cliente', title: 'Pagos del cliente', id: 'id_pago_cliente', paymentQR: true, fields: [select('id_cliente','Cliente','id_cliente'), select('id_proyecto','Proyecto','id_proyecto'), number('monto','Monto'), date('fecha_pago','Fecha pago'), staticSelect('metodo_pago','Método pago',metodosPago), staticSelect('estado','Estado',['Pendiente','Pagado'])] },
-      { key: 'plan_pagos', title: 'Plan de pagos', id: 'id_plan_pago', fields: [select('id_proyecto','Proyecto','id_proyecto'), select('id_fase','Fase','id_fase', { dependsOn: 'id_proyecto', disabled: true, help: 'Se autocompleta con la fase actual del proyecto.' }), number('numero_cuota','Número cuota'), number('monto_esperado','Monto esperado'), date('fecha_limite','Fecha límite'), number('porcentaje_asociado','Porcentaje asociado', { help: 'Porcentaje del total que representa esta cuota.' }), staticSelect('estado_pago','Estado',['Pendiente','Pagada','Atrasada'])] },
-      { key: 'liquidaciones', title: 'Liquidaciones', id: 'id_liquidacion', fields: [select('id_proyecto','Proyecto','id_proyecto'), select('id_cotizacion','Cotización','id_cotizacion'), autoDate('fecha_liquidacion','Fecha liquidación', { autoToday: true }), number('monto_total','Monto total'), number('retenciones','Retenciones'), number('neto_pagar','Neto a pagar', { disabled: true, computedSum: ['monto_total'], help: 'Se calcula: monto_total - retenciones' }), area('observaciones','Observaciones')] },
+      { key: 'pagos_cliente', title: 'Pagos del cliente', id: 'id_pago_cliente', paymentQR: true, fields: [select('id_cliente','Cliente','id_cliente'), select('id_proyecto','Proyecto','id_proyecto', { help: 'Proyecto para el cual se realiza el pago' }), number('monto','Monto del pago'), staticSelect('metodo_pago','Método pago',metodosPago), date('fecha_pago','Fecha pago'), area('observaciones','Observaciones')] },
+      { key: 'plan_pagos', title: 'Plan de pagos', id: 'id_plan_pago', fields: [select('id_proyecto','Proyecto','id_proyecto'), select('id_fase','Fase','id_fase', { dependsOn: 'id_proyecto', disabled: 'No aplica hasta seleccionar proyecto' }), number('porcentaje_fase','Porcentaje de la fase'), number('monto_estimado','Monto estimado'), date('fecha_estimada_pago','Fecha estimada pago')] },
+      { key: 'liquidaciones', title: 'Liquidaciones', id: 'id_liquidacion', fields: [select('id_proyecto','Proyecto','id_proyecto'), select('id_cotizacion','Cotización','id_cotizacion'), autoDate('fecha_liquidacion','Fecha liquidación', { autoToday: true }), number('monto_total','Monto total'), number('monto_pagado','Monto pagado', { disabled: true }), number('saldo','Saldo', { disabled: true, computedDiff: ['monto_total','monto_pagado'] }), area('observaciones','Observaciones')] },
     ]
   },
 
@@ -124,22 +123,20 @@ export const modules = {
         number('costo_real_proyecto','Costo real del proyecto'),
         staticSelect('estado_registro','Estado registro',estadoRegistro)
       ], details: [{ label: 'Historial', path: id => `/proyectos/${id}/historial` }, { label: 'Pagos cliente', path: id => `/proyectos/${id}/pagos-cliente` }] },
-      { key: 'fases_proyecto', title: 'Fases proyecto / historial', id: 'id_fase', readonly: true, fields: [], lockMessage: 'Historial automático de fases por proyecto. Solo se visualiza y filtra.' },
+      { key: 'fases_proyecto', title: 'Fases proyecto / historial', id: 'id_fase', readonly: true, fields: [], lockMessage: 'Historial automático de fases por proyecto. Solo se visualiza y filtra por proyecto.' },
       { key: 'avance_proyecto', title: 'Avance proyecto / historial', id: 'id_avance', readonly: true, fields: [], lockMessage: 'Historial automático del avance del proyecto. Solo se visualiza y filtra.' },
       { key: 'flujo_estado_proyecto', title: 'Flujo estado proyecto / historial', id: 'id_flujo', readonly: true, fields: [], lockMessage: 'Registro automático cada vez que cambia el estado del proyecto.' },
-      { key: 'proyecto_empleado', title: 'Asignar empleados a proyectos', id: 'id_proyecto_empleado', fields: [select('id_proyecto','Proyecto','id_proyecto'), select('id_empleado','Empleado','id_empleado'), text('rol_en_proyecto','Rol en el proyecto', { required: true, placeholder: 'Ej: Supervisor, Albañil, Electricista' }), date('fecha_asignacion','Fecha asignación')] },
-      { key: 'proyecto_material', title: 'Asignación material a proyecto', id: 'id_proyecto_material', fields: [select('id_proyecto','Proyecto','id_proyecto'), select('id_material','Material','id_material'), number('cantidad','Cantidad', { required: true }), number('costo_unitario','Costo unitario', { disabled: true }), number('costo_total','Costo total', { disabled: true })] },
+      { key: 'proyecto_material', title: 'Asignación material a proyecto', id: 'id_proyecto_material', fields: [select('id_proyecto','Proyecto','id_proyecto'), select('id_material','Material','id_material'), number('cantidad','Cantidad'), date('fecha_asignacion','Fecha asignación'), area('observaciones','Observaciones')] },
     ]
   },
 
   inventario: {
     title: 'Material e inventario', subtitle: 'Materiales, inventario, órdenes de pedido, asignación y movimientos', icon: 'ti-package', owner: 'Integrante 4',
     resources: [
-      { key: 'materiales', title: 'Materiales', id: 'id_material', fields: [text('codigo_material','Código material', { disabled: true, help: 'Se genera automáticamente.' }), text('nombre_material','Nombre material', { required: true }), text('unidad_medida','Unidad medida', { required: true }), select('id_categoria_material','Categoría','id_categoria_material', { catalogManage: catMaterial }), select('id_proveedor','Proveedor','id_proveedor', { required: true }), number('precio_unitario','Precio unitario', { required: true })] },
-      { key: 'inventario_material', title: 'Inventario material', id: 'id_inventario', fields: [select('id_material','Material','id_material'), select('id_almacen','Almacén','id_almacen'), number('cantidad_disponible','Cantidad disponible', { required: true }), number('cantidad_minima','Cantidad mínima')] },
-      { key: 'orden_pedido', title: 'Órdenes de pedido', id: 'id_orden_pedido', fields: [text('numero_orden','Número orden', { disabled: true, help: 'Se genera automáticamente.' }), select('id_proveedor','Proveedor','id_proveedor'), select('id_material','Material','id_material'), number('cantidad_solicitada','Cantidad solicitada'), date('fecha_solicitud','Fecha solicitud'), date('fecha_entrega_esperada','Fecha entrega esperada'), staticSelect('estado_orden','Estado',estadoOrdenPedido)] },
-      { key: 'proyecto_material', title: 'Asignación material a proyecto', id: 'id_proyecto_material', fields: [select('id_proyecto','Proyecto','id_proyecto'), select('id_material','Material','id_material'), number('cantidad','Cantidad'), date('fecha_asignacion','Fecha asignación')] },
-      { key: 'movimiento_inventario', title: 'Movimientos inventario / historial', id: 'id_movimiento', fields: [], readonly: true, lockMessage: 'Se registra automáticamente cuando se asigna material a un proyecto.' },
+      { key: 'materiales', title: 'Materiales', id: 'id_material', fields: [text('codigo_material','Código material', { disabled: true, help: 'Se genera automáticamente.' }), text('nombre_material','Nombre material', { required: true }), select('id_categoria_material','Categoría','id_categoria_material', { catalogManage: catMaterial }), text('unidad_medida','Unidad medida'), number('precio_unitario','Precio unitario'), area('descripcion_material','Descripción'), staticSelect('estado_registro','Estado',estadoRegistro)] },
+      { key: 'inventario_material', title: 'Inventario material', id: 'id_inventario', fields: [select('id_material','Material','id_material'), select('id_almacen','Almacén','id_almacen'), number('cantidad_disponible','Cantidad disponible'), number('cantidad_minima','Cantidad mínima para reabastecer'), number('cantidad_maxima','Cantidad máxima'), autoDate('fecha_actualizacion','Última actualización', { autoToday: true })] },
+      { key: 'orden_pedido', title: 'Órdenes de pedido', id: 'id_orden_pedido', fields: [text('numero_orden','Número orden', { disabled: true, help: 'Se genera automáticamente.' }), select('id_proveedor','Proveedor','id_proveedor', { required: true }), date('fecha_orden','Fecha orden'), staticSelect('estado_orden','Estado',estadoOrdenPedido), area('descripcion_orden','Descripción')] },
+      { key: 'movimiento_inventario', title: 'Movimientos inventario / historial', id: 'id_movimiento', fields: [], readonly: true, lockMessage: 'Se registra automáticamente cuando se asigna material o se actualiza inventario.' },
       { key: 'costos_material', title: 'Historial costos material', id: 'id_costo_material', fields: [], readonly: true, lockMessage: 'Se registra automáticamente al cambiar el precio de un material.' },
     ]
   },
@@ -147,8 +144,8 @@ export const modules = {
   proveedores: {
     title: 'Proveedores', subtitle: 'Proveedores y pagos realizados', icon: 'ti-truck', owner: 'Integrante 4',
     resources: [
-      { key: 'proveedores', title: 'Proveedores', id: 'id_proveedor', fields: [text('nombre_proveedor','Nombre proveedor', { required: true }), text('telefono_proveedor','Teléfono'), area('direccion_proveedor','Dirección'), text('email_proveedor','Correo'), select('id_categoria_proveedor','Categoría','id_categoria_proveedor', { catalogManage: catProveedor }), staticSelect('estado','Estado',estadoRegistro)] },
-      { key: 'pagos_proveedor', title: 'Pagos proveedor', id: 'id_pago_proveedor', fields: [select('id_proveedor','Proveedor','id_proveedor'), select('id_proyecto','Proyecto','id_proyecto', { help: 'Opcional' }), date('fecha_pago','Fecha pago'), number('monto_pago','Monto pago'), staticSelect('metodo_pago','Método pago',metodosPago), area('descripcion_pago','Descripción')] },
+      { key: 'proveedores', title: 'Proveedores', id: 'id_proveedor', fields: [text('nombre_proveedor','Nombre proveedor', { required: true }), text('telefono_proveedor','Teléfono'), area('direccion_proveedor','Dirección'), select('id_categoria_proveedor','Categoría','id_categoria_proveedor', { catalogManage: catProveedor }), text('email_proveedor','Correo'), area('descripcion','Descripción'), staticSelect('estado_registro','Estado',estadoRegistro)] },
+      { key: 'pagos_proveedor', title: 'Pagos proveedor', id: 'id_pago_proveedor', fields: [select('id_proveedor','Proveedor','id_proveedor'), select('id_proyecto','Proyecto','id_proyecto', { help: 'Opcional: Proyecto para el cual se realiza el pago' }), number('monto','Monto del pago'), staticSelect('metodo_pago','Método pago',metodosPago), date('fecha_pago','Fecha pago'), area('observaciones','Observaciones')] },
     ]
   },
 
@@ -161,15 +158,15 @@ export const modules = {
         // Añadido: especialidad para evitar inserts con NULL
         text('especialidad','Especialidad', { required: true, help: 'Ej: Electricidad, Albañilería, Fontanería' })
       ] },
-      { key: 'contrato_subcontratista', title: 'Contratos subcontratistas', id: 'id_contrato_sub', fields: [select('id_subcontratista','Subcontratista','id_subcontratista'), select('id_proyecto','Proyecto','id_proyecto'), number('monto_contratado','Monto contratado', { required: true }), date('fecha_inicio','Fecha inicio', { required: true }), date('fecha_fin','Fecha fin'), staticSelect('estado_contrato','Estado contrato',estadoContrato, { required: true })] },
-      { key: 'pago_subcontratista', title: 'Pagos subcontratistas', id: 'id_pago_sub', fields: [select('id_contrato_sub','Contrato','id_contrato_sub'), date('fecha_pago','Fecha pago'), number('monto_pago','Monto')] }
+      { key: 'contrato_subcontratista', title: 'Contratos subcontratistas', id: 'id_contrato_sub', fields: [select('id_subcontratista','Subcontratista','id_subcontratista'), select('id_proyecto','Proyecto','id_proyecto'), date('fecha_inicio','Fecha inicio'), date('fecha_fin','Fecha fin'), number('monto_contrato','Monto contrato'), area('descripcion','Descripción')] },
+      { key: 'pago_subcontratista', title: 'Pagos subcontratistas', id: 'id_pago_sub', fields: [select('id_contrato_sub','Contrato','id_contrato_sub'), date('fecha_pago','Fecha pago'), number('monto','Monto pago'), area('observaciones','Observaciones')] },
     ]
   },
 
   catalogos: {
     title: 'Catálogos', subtitle: 'Tablas seleccionables que alimentan los desplegables', icon: 'ti-list-details', owner: 'Compartido',
     resources: [
-      { key: 'cargo_empleado', title: 'Cargo empleado', id: 'id_cargo', fields: [text('nombre_cargo','Nombre del cargo', { required: true }), area('descripcion_cargo','Descripción'), number('nivel_jerarquico','Nivel jerárquico'), staticSelect('estado','Estado',estadoRegistro)] },
+      { key: 'cargo_empleado', title: 'Cargo empleado', id: 'id_cargo', fields: [text('nombre_cargo','Nombre del cargo', { required: true }), area('descripcion_cargo','Descripción'), number('nivel_cargo','Nivel jerárquico'), staticSelect('estado','Estado',estadoRegistro)] },
       { key: 'categoria_empleado', title: 'Categoría empleado', id: 'id_categoria_empleado', fields: [text('nombre_categoria_empleado','Categoría'), area('descripcion_categoria_empleado','Descripción')] },
       { key: 'estado_empleado', title: 'Estado empleado', id: 'id_estado_empleado', fields: [text('nombre_estado','Estado'), area('descripcion','Descripción')] },
       { key: 'tipo_documento', title: 'Tipo documento', id: 'id_tipo_documento', fields: [text('nombre_documento','Tipo documento')] },
