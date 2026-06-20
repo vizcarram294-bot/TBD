@@ -2,6 +2,23 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 export async function api(path, options = {}) {
   const token = localStorage.getItem('construsys_token');
+
+  // If body is a JSON string and we're creating a subcontratista, ensure 'especialidad' has a default
+  try {
+    const method = (options.method || 'GET').toUpperCase();
+    if (options.body && typeof options.body === 'string') {
+      const parsed = JSON.parse(options.body);
+      if (method === 'POST' && path === '/subcontratistas') {
+        if (parsed.especialidad === undefined || parsed.especialidad === null || parsed.especialidad === '') {
+          parsed.especialidad = 'Sin especificar';
+        }
+      }
+      options = { ...options, body: JSON.stringify(parsed) };
+    }
+  } catch (e) {
+    // ignore parse errors and continue
+  }
+
   const res = await fetch(`${API_URL}${path}`, {
     headers: {
       'Content-Type': 'application/json',
