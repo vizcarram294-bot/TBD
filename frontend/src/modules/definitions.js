@@ -40,7 +40,6 @@ export const modules = {
         number('tarifa_hora_actual','Tarifa por hora actual', { help: 'Se actualiza automáticamente con el historial de pagos.' }),
         select('id_estado_empleado','Estado empleado','id_estado_empleado', { hideOnCreate: true, help: 'Al crear queda activo por defecto. Solo se cambia al editar.' })
       ], details: [{ label: 'Resumen empleado', path: id => `/empleados/${id}/resumen` }], quickCreate: { label: 'Registrar asistencia', resource: 'control_asistencia', fields: [text('ci_empleado','CI del empleado', { placeholder: 'Ej: 8564321' })] } },
-      { key: 'cargo_empleado', title: 'Cargos / Puestos', id: 'id_cargo', fields: [text('nombre_cargo','Nombre del cargo'), area('descripcion_cargo','Descripción'), number('nivel_jerarquico','Nivel jerárquico'), staticSelect('estado','Estado',estadoRegistro)] },
       { key: 'empleado_cargo', title: 'Asignación de cargo a empleado', id: 'id_empleado_cargo', fields: [select('id_empleado','Empleado','id_empleado'), select('id_cargo','Cargo','id_cargo'), date('fecha_asignacion','Fecha asignación'), date('fecha_fin','Fecha fin', { help: 'Dejar vacío si sigue vigente.' })] },
       { key: 'empleado_tipo_pago_historial', title: 'Historial tipo de pago/tarifa', id: 'id_historial', fields: [
         select('id_empleado','Empleado','id_empleado'), select('id_tipo_pago','Tipo de pago','id_tipo_pago'), 
