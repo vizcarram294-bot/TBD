@@ -46,7 +46,7 @@ export const modules = {
         date('fecha_inicio','Fecha inicio'), date('fecha_fin','Fecha fin', { help: 'Dejar vacío si es vigente.' }),
         area('motivo','Motivo del cambio', { help: 'Ej: Aumento por desempeño, Cambio de puesto.' })
       ], readonly: true, lockMessage: 'Se registra automáticamente al cambiar tipo de pago.' },
-      { key: 'contrato_empleado', title: 'Contratos de empleado', id: 'id_contrato', fields: [select('id_empleado','Empleado','id_empleado'), select('id_tipo_contrato','Tipo contrato','id_tipo_contrato'), date('fecha_inicio_contrato','Fecha inicio', { required: true }), date('fecha_fin_contrato','Fecha fin', { help: 'Se actualiza automáticamente al cambiar el estado a Finalizado, Despedido o Suspendido.' }), staticSelect('estado_contrato','Estado contrato',estadoContrato, { required: true })] },
+      { key: 'contrato_empleado', title: 'Contratos de empleado', id: 'id_contrato', fields: [select('id_empleado','Empleado','id_empleado'), select('id_tipo_contrato','Tipo contrato','id_tipo_contrato'), date('fecha_inicio_contrato','Fecha inicio'), date('fecha_fin_contrato','Fecha fin', { help: 'Dejar vacío si sigue vigente.' }), staticSelect('estado_contrato','Estado contrato',estadoContrato)] },
       { key: 'control_asistencia', title: 'Asistencia de trabajadores', id: 'id_asistencia', fields: [text('ci_empleado','CI del empleado', { placeholder: 'Ej: 8564321' }), select('id_empleado','Empleado','id_empleado'), date('fecha_asistencia','Fecha'), staticSelect('estado_asistencia','Estado asistencia',asistencia), area('observaciones','Observaciones')] },
       { key: 'asistencia_diaria_resumen', title: 'Resumen diario de asistencia', id: 'id_resumen', fields: [
         select('id_empleado','Empleado','id_empleado'), date('fecha_resumen','Fecha'), 
@@ -161,7 +161,7 @@ export const modules = {
         // Añadido: especialidad para evitar inserts con NULL
         text('especialidad','Especialidad', { required: true, help: 'Ej: Electricidad, Albañilería, Fontanería' })
       ] },
-      { key: 'contrato_subcontratista', title: 'Contratos subcontratistas', id: 'id_contrato_sub', fields: [select('id_subcontratista','Subcontratista','id_subcontratista'), select('id_proyecto','Proyecto','id_proyecto'), number('monto_contratado','Monto contratado', { required: true }), date('fecha_inicio','Fecha inicio', { required: true }), date('fecha_fin','Fecha fin'), staticSelect('estado_contrato','Estado contrato',estadoContrato, { required: true }), area('descripcion_trabajo','Descripción trabajo') ] },
+      { key: 'contrato_subcontratista', title: 'Contratos subcontratistas', id: 'id_contrato_sub', fields: [select('id_subcontratista','Subcontratista','id_subcontratista'), select('id_proyecto','Proyecto','id_proyecto'), number('monto_contratado','Monto contratado', { required: true }), date('fecha_inicio','Fecha inicio', { required: true }), date('fecha_fin','Fecha fin'), staticSelect('estado_contrato','Estado contrato',estadoContrato, { required: true })] },
       { key: 'pago_subcontratista', title: 'Pagos subcontratistas', id: 'id_pago_sub', fields: [select('id_contrato_sub','Contrato','id_contrato_sub'), date('fecha_pago','Fecha pago'), number('monto_pago','Monto')] }
     ]
   },
