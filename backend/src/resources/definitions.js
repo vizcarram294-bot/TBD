@@ -284,19 +284,18 @@ export const resources = {
     columns: ['id_material','id_almacen','stock_actual_material','stock_minimo_material','stock_maximo_material','punto_reorden_material','fecha_actualizacion','observacion','estado_alerta'],
     search: ['id_inventario','material','almacen','observacion','estado_alerta','stock_actual_material'],
   },
-  orden_compra: {
-    table: 'orden_compra', id: 'id_orden_compra',
-    select: `SELECT oc.id_orden_compra, pr.nombre_proveedor AS proveedor, pry.nombre_proyecto AS proyecto,
-      m.nombre_material AS material, oc.cantidad_pedida, oc.precio_unitario, oc.total_orden,
-      oc.fecha_orden, oc.fecha_entrega, oc.estado_orden, oc.observacion,
-      oc.id_proveedor, oc.id_proyecto, oc.id_material
-      FROM orden_compra oc
-      LEFT JOIN proveedores pr ON pr.id_proveedor = oc.id_proveedor
-      LEFT JOIN proyectos pry ON pry.id_proyecto = oc.id_proyecto
-      LEFT JOIN materiales m ON m.id_material = oc.id_material`,
-    columns: ['id_proveedor','id_proyecto','id_material','cantidad_pedida','precio_unitario','total_orden','fecha_orden','fecha_entrega','estado_orden','observacion'],
-    search: ['id_orden_compra','proveedor','proyecto','material','estado_orden','cantidad_pedida'],
-  },
+  orden_pedido: {
+  table: 'orden_pedido', id: 'id_orden',
+  select: `SELECT op.id_orden, pr.nombre_proveedor AS proveedor,
+    m.nombre_material AS material, op.cantidad_pedida, op.precio_unitario, op.total_pedido,
+    op.fecha_pedido, op.estado_pedido,
+    op.id_proveedor, op.id_material
+    FROM orden_pedido op
+    LEFT JOIN proveedores pr ON pr.id_proveedor = op.id_proveedor
+    LEFT JOIN materiales m ON m.id_material = op.id_material`,
+  columns: ['id_proveedor','id_material','cantidad_pedida','precio_unitario','total_pedido','fecha_pedido','estado_pedido'],
+  search: ['id_orden','proveedor','material','estado_pedido','cantidad_pedida'],
+},
   movimiento_inventario: {
     table: 'movimiento_inventario', id: 'id_movimiento', allowCreate: false, allowUpdate: false, allowDelete: false,
     select: `SELECT mi.id_movimiento, m.nombre_material AS material, ISNULL(p.nombre_proyecto, '-') AS proyecto, mi.tipo_movimiento, mi.cantidad, mi.fecha, mi.id_material, mi.id_proyecto

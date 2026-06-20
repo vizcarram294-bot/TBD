@@ -103,10 +103,8 @@ export default function ResourceTable({ config, permissions = [], user = null })
   const tableRef = useRef(null);
 
   // Map frontend resource keys to API resource names when they diverge.
-  // Fix: algunos módulos en frontend usan 'orden_pedido' pero el backend espera 'orden_compra'.
-  const apiKey = useMemo(() => config.key === 'orden_pedido' ? 'orden_compra' : config.key, [config.key]);
-  const apiId = useMemo(() => config.key === 'orden_pedido' ? 'id_orden_compra' : config.id, [config.key, config.id]);
-
+  const apiKey = config.key;
+   const apiId = config.id;
   const cols = useMemo(() => visibleColumns(rows, apiId, apiKey), [rows, apiId, apiKey]);
 
   const canAdd = !config.readonly && !config.noAdd && canDo(permissions, apiKey, 'INSERT', user);
