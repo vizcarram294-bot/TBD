@@ -11,12 +11,6 @@ function getResourceOrThrow(name) {
   return def;
 }
 
-function stripTrailingOrderBy(selectSql) {
-  if (!selectSql) return selectSql;
-  // Remueve un ORDER BY al final de la cadena, incluyendo comentarios y espacios finales.
-  return String(selectSql).replace(/\s*ORDER\s+BY[\s\S]*$/i, '').trim();
-}
-
 function buildSearchCondition(def) {
   if (!def.search?.length) return '';
   return '(' + def.search.map((col) => `CAST(ISNULL(base.[${col}], '') AS NVARCHAR(MAX)) LIKE @search`).join(' OR ') + ')';
@@ -145,7 +139,7 @@ async function getIdEstadoEmpleadoActivo(pool) {
 }
 
 async function getIdEstadoProyectoInicial(pool) {
-  const result = await pool.request().query(`SELECT TOP 1 id_estado_proyecto FROM estados_proyecto WHERE LOWER(nombre_estado) LIKE '%inicio%' OR LOWER(nombre_estado) LIKE '%aprob%' OR LOWER(nombre_estado) LIKE '%aprobado%' ORDER BY id_estado_proyecto`);
+  const result = await pool.request().query(`SELECT TOP 1 id_estado_proyecto FROM estados_proyecto WHERE LOWER(nombre_estado) LIKE '%inicio%' OR LOWER(nombre_estado) LIKE '%aprob%' OR LOWER(nombr[...]
   return result.recordset[0]?.id_estado_proyecto ?? null;
 }
 
@@ -323,6 +317,11 @@ async function preprocessBody(resourceName, body, mode, pool) {
   }
   if (resourceName === 'pago_subcontratista' && mode === 'create') data.fecha_pago = data.fecha_pago || today();
 
+  // Solución rápida: asegurar valor por defecto para 'especialidad' en subcontratistas
+  if (resourceName === 'subcontratistas' && mode === 'create') {
+    data.especialidad = data.especialidad ?? 'Sin especificar';
+  }
+
   return data;
 }
 
@@ -442,8 +441,7 @@ export async function listResource(req, res, next) {
       conditions.push(clientFilter);
     }
     const where = buildWhere(conditions);
-    const selectSafe = stripTrailingOrderBy(def.select);
-    const query = `SELECT TOP (@limit) * FROM (${selectSafe}) base ${where} ORDER BY base.[${def.id}] DESC`;
+    const query = `SELECT TOP (@limit) * FROM (${def.select}) base ${where} ORDER BY base.[${def.id}] DESC`;
     const result = await request.query(query);
     res.json(result.recordset);
   } catch (error) {
@@ -463,8 +461,7 @@ export async function getResource(req, res, next) {
       request.input('auth_cliente', sql.Int, Number(req.user?.id_cliente || 0));
       conditions.push(clientFilter);
     }
-    const selectSafe = stripTrailingOrderBy(def.select);
-    const result = await request.query(`SELECT * FROM (${selectSafe}) base ${buildWhere(conditions)}`);
+    const result = await request.query(`SELECT * FROM (${def.select}) base ${buildWhere(conditions)}`);
     if (!result.recordset[0]) return res.status(404).json({ message: 'Registro no encontrado' });
     res.json(result.recordset[0]);
   } catch (error) {
