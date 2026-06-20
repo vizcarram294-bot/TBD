@@ -4,6 +4,7 @@ import ModalForm from './ModalForm.jsx';
 import DetailModal from './DetailModal.jsx';
 import { canDo } from '../permissions.js';
 import { exportToExcel, exportToPDF, copyToClipboard } from '../utils/exportUtils.js';
+import PaymentQRModal from './PaymentQRModal.jsx';
 
 function visibleColumns(rows, id, resourceKey) {
   const cols = rows?.[0] ? Object.keys(rows[0]) : [];
@@ -95,6 +96,7 @@ export default function ResourceTable({ config, permissions = [], user = null })
   const [error, setError] = useState('');
   const [modal, setModal] = useState(null);
   const [detailModal, setDetailModal] = useState(null);
+  const [paymentModal, setPaymentModal] = useState(null);
   const [tableWidth, setTableWidth] = useState(900);
   const wrapRef = useRef(null);
   const topScrollRef = useRef(null);
@@ -157,13 +159,7 @@ export default function ResourceTable({ config, permissions = [], user = null })
   }
 
   function showQR(row) {
-    setDetailModal({
-      title: `Pago QR — ${row.cliente || 'Cliente'}`,
-      data: {
-        pago: [row],
-        qr: [{ instrucciones: 'El cliente puede pagar por QR o transferencia con estos datos.', payload: qrPayload(row), monto: row.monto, metodo_sugerido: row.metodo_pago || 'QR / Transferencia' }]
-      }
-    });
+    setPaymentModal(row);
   }
 
   function clearFilter() {
@@ -235,5 +231,6 @@ export default function ResourceTable({ config, permissions = [], user = null })
       onSave={save}
     />}
     {detailModal && <DetailModal title={detailModal.title} data={detailModal.data} onClose={() => setDetailModal(null)} />}
+    {paymentModal && <PaymentQRModal payment={paymentModal} onClose={() => setPaymentModal(null)} />}
   </div>;
 }
