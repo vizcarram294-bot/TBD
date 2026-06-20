@@ -177,17 +177,17 @@ export const resources = {
     search: ['id_cotizacion','cliente','ubicacion_obra','estado_cotizacion','metros_cuadrados'],
   },
   pagos_cliente: {
-    table: 'pagos_cliente', id: 'id_pago_cliente',
-    select: `SELECT pc.id_pago_cliente, CONCAT(c.nombre_cliente, ' ', ISNULL(c.apellido_cliente, '')) AS cliente,
-      p.nombre_proyecto AS proyecto, epp.estado_pago_proyecto AS estado_pago, pc.monto, pc.fecha_pago, pc.metodo_pago,
-      pc.id_cliente, pc.id_proyecto, pc.id_estado_pago
-      FROM pagos_cliente pc
-      LEFT JOIN clientes c ON c.id_cliente = pc.id_cliente
-      LEFT JOIN proyectos p ON p.id_proyecto = pc.id_proyecto
-      LEFT JOIN estado_pago_proyecto epp ON epp.id_estado_pago = pc.id_estado_pago`,
-    columns: ['id_cliente','id_proyecto','id_estado_pago','monto','fecha_pago','metodo_pago'],
-    search: ['id_pago_cliente','cliente','proyecto','estado_pago','metodo_pago','monto','fecha_pago'],
-  },
+  table: 'pagos_cliente', id: 'id_pago_cliente',
+  select: `SELECT pc.id_pago_cliente, CONCAT(c.nombre_cliente, ' ', ISNULL(c.apellido_cliente, '')) AS cliente,
+    p.nombre_proyecto AS proyecto, epp.estado_pago_proyecto AS estado_pago, pc.monto, pc.fecha_pago, pc.metodo_pago, pc.estado,
+    pc.id_cliente, pc.id_proyecto, pc.id_estado_pago
+    FROM pagos_cliente pc
+    LEFT JOIN clientes c ON c.id_cliente = pc.id_cliente
+    LEFT JOIN proyectos p ON p.id_proyecto = pc.id_proyecto
+    LEFT JOIN estado_pago_proyecto epp ON epp.id_estado_pago = pc.id_estado_pago`,
+  columns: ['id_cliente','id_proyecto','id_estado_pago','monto','fecha_pago','metodo_pago','estado'],
+  search: ['id_pago_cliente','cliente','proyecto','estado_pago','metodo_pago','monto','fecha_pago','estado'],
+},
   plan_pagos: {
     table: 'plan_pagos', id: 'id_plan_pago',
     select: `SELECT pp.id_plan_pago, p.nombre_proyecto AS proyecto, ISNULL(fp.nombre_fase, '-') AS nombre_fase, pp.numero_cuota, pp.monto_esperado, pp.fecha_limite, pp.estado_pago, pp.porcentaje_asociado, pp.id_proyecto, pp.id_fase
