@@ -154,9 +154,8 @@ export default function ModalForm({ title, fields, initial, mode = 'create', onC
       return selectEl;
     }
     if (field.type === 'textarea') return <textarea rows="2" value={value} disabled={disabled} placeholder={field.placeholder || ''} onChange={e => change(field.name, e.target.value)} />;
-    return <input type={field.type || 'text'} step={field.step || (field.type === 'number' ? 'any' : undefined)} inputMode={field.type === 'number' ? 'decimal' : undefined} value={value} disabled={disabled} placeholder={field.placeholder || ''} onChange={e => change(field.name, e.target.value)} />;
+return <input type={field.type || 'text'} step={field.step || (field.type === 'number' ? 'any' : undefined)} inputMode={field.type === 'number' ? 'decimal' : undefined} value={value} disabled={disabled} placeholder={field.placeholder || ''} onChange={e => change(field.name, e.target.value)} />;
   }
-
   return <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
     <div className="modal">
       <div className="modal-head">

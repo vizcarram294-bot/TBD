@@ -369,8 +369,8 @@ async function runAfterUpdate(resourceName, pool, id, body) {
 // Se puede extender para manejar relaciones complejas por recurso.
 async function cascadeDelete(pool, resourceName, id, user) {
   const def = getResourceOrThrow(resourceName);
-  // Ejecuta DELETE con contexto de auditoría para que los triggers/contexts estén correctamente asignados.
-  await pool.request().input('id', sql.Int, Number(id)).query(`${auditSql}DELETE FROM [${def.table}] WHERE [${def.id}] = @id;`);
+  const request = addAuditInputs(pool.request(), user).input('id', sql.Int, Number(id));
+  await request.query(`${auditSql}DELETE FROM [${def.table}] WHERE [${def.id}] = @id;`);
 }
 
 // --- FUNCIONES AGREGADAS: listResource y getResource ---
