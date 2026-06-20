@@ -146,7 +146,7 @@ async function getIdEstadoEmpleadoActivo(pool) {
 
 async function getIdEstadoProyectoInicial(pool) {
   // Selecciona el estado inicial del proyecto preferentemente por coincidencias con 'inicio' o 'aprob'.
-  const result = await pool.request().query(`SELECT TOP 1 id_estado_proyecto FROM estados_proyecto WHERE LOWER(nombre_estado) LIKE '%inicio%' OR LOWER(nombre_estado) LIKE '%aprob%' ORDER BY id_es[...]`);
+  const result = await pool.request().query(`SELECT TOP 1 id_estado_proyecto FROM estados_proyecto WHERE LOWER(nombre_estado) LIKE '%inicio%' OR LOWER(nombre_estado) LIKE '%aprob%' ORDER BY id_estado_proyecto`);
   return result.recordset[0]?.id_estado_proyecto ?? null;
 }
 
@@ -312,8 +312,8 @@ async function preprocessBody(resourceName, body, mode, pool) {
     data.costo_total = Number((Number(data.cantidad || 0) * precio).toFixed(2));
   }
 
-  if (resourceName === 'proveedores' && mode === 'create') data.estado_proveedor = data.estado_proveedor || 'Activo';
-  if (resourceName === 'pagos_proveedor' && mode === 'create') data.fecha_pago = data.fecha_pago || today();
+  if (resourceName === 'proveedores' and mode === 'create') data.estado_proveedor = data.estado_proveedor || 'Activo';
+  if (resourceName === 'pagos_proveedor' and mode === 'create') data.fecha_pago = data.fecha_pago || today();
 
   if (resourceName === 'contrato_subcontratista') {
     if (mode === 'create') {
@@ -322,7 +322,7 @@ async function preprocessBody(resourceName, body, mode, pool) {
     }
     if (hasFinalEstado(data.estado_contrato) && !data.fecha_fin) data.fecha_fin = today();
   }
-  if (resourceName === 'pago_subcontratista' && mode === 'create') data.fecha_pago = data.fecha_pago || today();
+  if (resourceName === 'pago_subcontratista' and mode === 'create') data.fecha_pago = data.fecha_pago || today();
 
   return data;
 }
@@ -371,6 +371,70 @@ async function cascadeDelete(pool, resourceName, id, user) {
   const def = getResourceOrThrow(resourceName);
   // Ejecuta DELETE con contexto de auditoría para que los triggers/contexts estén correctamente asignados.
   await pool.request().input('id', sql.Int, Number(id)).query(`${auditSql}DELETE FROM [${def.table}] WHERE [${def.id}] = @id;`);
+}
+
+// --- FUNCIONES AGREGADAS: listResource y getResource ---
+
+export async function listResource(req, res, next) {
+  try {
+    const def = getResourceOrThrow(req.params.resource);
+    const pool = await getPool();
+
+    const search = String(req.query.search || '').trim();
+    const limit = Math.min(Number(req.query.limit || 200), 1000);
+
+    const baseSelect = stripTrailingOrderBy(def.select || '');
+
+    const request = pool.request().input('limit', sql.Int, limit);
+    const conditions = [];
+
+    if (search) {
+      request.input('search', sql.NVarChar, `%${search}%`);
+      conditions.push(buildSearchCondition(def));
+    }
+
+    if (isCliente(req.user)) {
+      const clientFilter = clientFilterCondition(req.params.resource);
+      if (!clientFilter) return res.json([]); // los clientes no pueden acceder a este recurso
+      request.input('auth_cliente', sql.Int, Number(req.user?.id_cliente || 0));
+      conditions.push(clientFilter);
+    }
+
+    const where = buildWhere(conditions);
+
+    // Usamos TOP(@limit) para proteger consultas grandes y ordenamos por id descendente por defecto
+    const query = `SELECT TOP (@limit) base.* FROM (${baseSelect}) base ${where} ORDER BY base.[${def.id}] DESC`;
+
+    const result = await request.query(query);
+    res.json(result.recordset);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getResource(req, res, next) {
+  try {
+    const def = getResourceOrThrow(req.params.resource);
+    const pool = await getPool();
+    const id = Number(req.params.id);
+
+    const request = pool.request().input('id', sql.Int, id);
+    const conditions = [`base.[${def.id}] = @id`];
+
+    if (isCliente(req.user)) {
+      const clientFilter = clientFilterCondition(req.params.resource);
+      if (!clientFilter) return res.status(403).json({ message: 'El rol Cliente no puede ver este recurso.' });
+      request.input('auth_cliente', sql.Int, Number(req.user?.id_cliente || 0));
+      conditions.push(clientFilter);
+    }
+
+    const baseSelect = stripTrailingOrderBy(def.select || '');
+    const result = await request.query(`SELECT * FROM (${baseSelect}) base ${buildWhere(conditions)}`);
+    if (!result.recordset[0]) return res.status(404).json({ message: 'Registro no encontrado' });
+    res.json(result.recordset[0]);
+  } catch (error) {
+    next(error);
+  }
 }
 
 // Infieres tipos SQL básicos por nombre de columna y aplica request.input con conversión mínima.
@@ -445,8 +509,8 @@ export async function createResource(req, res, next) {
     const vals = keys.map(k => `@${k}`).join(', ');
     // Ejecutamos con contexto de auditoría
     const insertSql = `${auditSql}
-INSERT INTO [${def.table}] (${cols}) VALUES (${vals});
-SELECT SCOPE_IDENTITY() AS id;`;
+ INSERT INTO [${def.table}] (${cols}) VALUES (${vals});
+ SELECT SCOPE_IDENTITY() AS id;`;
 
     const result = await request.query(insertSql);
     const insertedId = result.recordset?.[0]?.id ?? null;
@@ -481,8 +545,8 @@ export async function updateResource(req, res, next) {
     const sets = keys.map(k => `[${k}] = @${k}`).join(', ');
 
     const updateSql = `${auditSql}
-UPDATE [${def.table}] SET ${sets} WHERE [${def.id}] = @id;
-SELECT TOP 1 * FROM [${def.table}] WHERE [${def.id}] = @id;`;
+ UPDATE [${def.table}] SET ${sets} WHERE [${def.id}] = @id;
+ SELECT TOP 1 * FROM [${def.table}] WHERE [${def.id}] = @id;`;
 
     const result = await request.query(updateSql);
     const updated = result.recordset?.[0] ?? null;
