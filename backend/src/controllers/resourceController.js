@@ -499,6 +499,12 @@ export async function createResource(req, res, next) {
     const pool = await getPool();
     const data = await preprocessBody(req.params.resource, req.body || {}, 'create', pool);
 
+    if (Array.isArray(def.columns) && def.columns.length) {
+      for (const key of Object.keys(data)) {
+        if (!def.columns.includes(key)) delete data[key];
+      }
+    }
+
     const keys = Object.keys(data);
     if (!keys.length) return res.status(400).json({ message: 'Sin datos para crear.' });
 
@@ -536,6 +542,13 @@ export async function updateResource(req, res, next) {
     if (!existing) return res.status(404).json({ message: 'Registro no encontrado' });
 
     const data = await preprocessBody(req.params.resource, req.body || {}, 'update', pool);
+
+    if (Array.isArray(def.columns) && def.columns.length) {
+      for (const key of Object.keys(data)) {
+        if (!def.columns.includes(key)) delete data[key];
+      }
+    }
+
     const keys = Object.keys(data);
     if (!keys.length) return res.status(400).json({ message: 'Sin datos para actualizar.' });
 
