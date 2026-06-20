@@ -145,14 +145,8 @@ async function getIdEstadoEmpleadoActivo(pool) {
 }
 
 async function getIdEstadoProyectoInicial(pool) {
-  // Uso de una cadena multilínea clara para evitar errores de sintaxis en la plantilla.
-  const sqlQuery = `SELECT TOP 1 id_estado_proyecto
-FROM estados_proyecto
-WHERE LOWER(nombre_estado) LIKE '%inicio%'
-   OR LOWER(nombre_estado) LIKE '%aprob%'
-   OR LOWER(nombre_estado) LIKE '%inici%'
-ORDER BY id_estado_proyecto`;
-  const result = await pool.request().query(sqlQuery);
+  // Selecciona el estado inicial del proyecto preferentemente por coincidencias con 'inicio' o 'aprob'.
+  const result = await pool.request().query(`SELECT TOP 1 id_estado_proyecto FROM estados_proyecto WHERE LOWER(nombre_estado) LIKE '%inicio%' OR LOWER(nombre_estado) LIKE '%aprob%' ORDER BY id_es[...]`);
   return result.recordset[0]?.id_estado_proyecto ?? null;
 }
 
@@ -365,115 +359,102 @@ async function runAfterCreate(resourceName, pool, inserted, body) {
   }
 }
 
-async function runAfterUpdate(resourceName, pool, id, data) {
-  if (resourceName === 'usuarios' && data.id_rol) {
-    await pool.request()
-      .input('id_usuario', sql.Int, id)
-      .input('id_rol', sql.Int, Number(data.id_rol))
-      .query(`DELETE FROM usuario_rol WHERE id_usuario=@id_usuario;
-              INSERT INTO usuario_rol(id_usuario, id_rol) VALUES(@id_usuario, @id_rol);`);
-  }
-
-  if (resourceName === 'materiales' && Object.prototype.hasOwnProperty.call(data, 'precio_unitario')) {
-    await pool.request()
-      .input('id_material', sql.Int, id)
-      .input('precio', sql.Decimal(10,2), Number(data.precio_unitario || 0))
-      .query(`INSERT INTO costos_material(id_material, precio_unitario, fecha_actualizacion)
-              VALUES(@id_material, @precio, CAST(GETDATE() AS date))`);
-  }
+// Hook ejecutado después de una actualización. Por defecto no hace nada, pero se puede extender para acciones específicas.
+async function runAfterUpdate(resourceName, pool, id, body) {
+  // Placeholder: extender según necesidades de recursos concretos.
+  return;
 }
 
-async function cascadeDelete(pool, type, id, user) {
-  const r = addAuditInputs(pool.request(), user).input('id', sql.Int, Number(id));
-  if (type === 'empleados') {
-    await r.query(`${auditSql}
-      DELETE FROM usuario_rol WHERE id_usuario IN (SELECT id_usuario FROM usuarios WHERE id_empleado = @id);
-      DELETE FROM usuarios WHERE id_empleado = @id;
-      DELETE FROM proyecto_mano_obra WHERE id_empleado = @id;
-      DELETE FROM proyecto_empleado WHERE id_empleado = @id;
-      DELETE FROM nomina_pagos WHERE id_empleado = @id;
-      DELETE FROM control_asistencia WHERE id_empleado = @id;
-      DELETE FROM contrato_empleado WHERE id_empleado = @id;
-      DELETE FROM empleados WHERE id_empleado = @id;`);
-    return;
-  }
-
-  if (type === 'proyectos') {
-    await r.query(`${auditSql}
-      DELETE FROM pago_subcontratista WHERE id_contrato_sub IN (SELECT id_contrato_sub FROM contrato_subcontratista WHERE id_proyecto = @id);
-      DELETE FROM contrato_subcontratista WHERE id_proyecto = @id;
-      DELETE FROM pagos_proveedor WHERE id_proyecto = @id;
-      DELETE FROM pagos_cliente WHERE id_proyecto = @id;
-      DELETE FROM plan_pagos WHERE id_proyecto = @id;
-      DELETE FROM proyecto_mano_obra WHERE id_proyecto = @id;
-      DELETE FROM proyecto_empleado WHERE id_proyecto = @id;
-      DELETE FROM movimiento_inventario WHERE id_proyecto = @id;
-      DELETE FROM proyecto_material WHERE id_proyecto = @id;
-      DELETE FROM avance_proyecto WHERE id_proyecto = @id;
-      DELETE FROM flujo_estado_proyecto WHERE id_proyecto = @id;
-      DELETE FROM fases_proyecto WHERE id_proyecto = @id;
-      DELETE FROM liquidaciones WHERE id_proyecto = @id;
-      DELETE FROM proyectos WHERE id_proyecto = @id;`);
-    return;
-  }
-
-  if (type === 'proveedores') {
-    await r.query(`${auditSql}
-      DELETE FROM pagos_proveedor WHERE id_proveedor = @id;
-      DELETE FROM movimiento_inventario WHERE id_material IN (SELECT id_material FROM materiales WHERE id_proveedor = @id);
-      DELETE FROM proyecto_material WHERE id_material IN (SELECT id_material FROM materiales WHERE id_proveedor = @id);
-      DELETE FROM inventario_material WHERE id_material IN (SELECT id_material FROM materiales WHERE id_proveedor = @id);
-      DELETE FROM costos_material WHERE id_material IN (SELECT id_material FROM materiales WHERE id_proveedor = @id);
-      DELETE FROM materiales WHERE id_proveedor = @id;
-      DELETE FROM proveedores WHERE id_proveedor = @id;`);
-    return;
-  }
+// Borrado en cascada por defecto: Borra dependencias si es necesario y el registro principal.
+// Se puede extender para manejar relaciones complejas por recurso.
+async function cascadeDelete(pool, resourceName, id, user) {
+  const def = getResourceOrThrow(resourceName);
+  // Ejecuta DELETE con contexto de auditoría para que los triggers/contexts estén correctamente asignados.
+  await pool.request().input('id', sql.Int, Number(id)).query(`${auditSql}DELETE FROM [${def.table}] WHERE [${def.id}] = @id;`);
 }
 
-export async function listResource(req, res, next) {
+// Crear registro genérico
+export async function createResource(req, res, next) {
   try {
     const def = getResourceOrThrow(req.params.resource);
     const pool = await getPool();
-    const search = String(req.query.search || '').trim();
-    const limit = Math.min(Number(req.query.limit || 200), 1000);
-    const request = pool.request().input('limit', sql.Int, limit);
-    const conditions = [];
-    if (search) {
-      request.input('search', sql.NVarChar, `%${search}%`);
-      conditions.push(buildSearchCondition(def));
-    }
-    if (isCliente(req.user)) {
-      const clientFilter = clientFilterCondition(req.params.resource);
-      if (!clientFilter) return res.json([]);
-      request.input('auth_cliente', sql.Int, Number(req.user?.id_cliente || 0));
-      conditions.push(clientFilter);
-    }
-    const where = buildWhere(conditions);
-    const selectSafe = stripTrailingOrderBy(def.select);
-    const query = `SELECT TOP (@limit) * FROM (${selectSafe}) base ${where} ORDER BY base.[${def.id}] DESC`;
-    const result = await request.query(query);
-    res.json(result.recordset);
+    const data = await preprocessBody(req.params.resource, req.body || {}, 'create', pool);
+
+    const keys = Object.keys(data);
+    if (!keys.length) return res.status(400).json({ message: 'Sin datos para crear.' });
+
+    const request = addAuditInputs(pool.request(), req.user);
+    for (const k of keys) request.input(k, sql.VarChar(sql.MAX), data[k]);
+
+    const cols = keys.map(k => `[${k}]`).join(', ');
+    const vals = keys.map(k => `@${k}`).join(', ');
+    // Ejecutamos con contexto de auditoría
+    const insertSql = `${auditSql}
+INSERT INTO [${def.table}] (${cols}) VALUES (${vals});
+SELECT SCOPE_IDENTITY() AS id;`;
+
+    const result = await request.query(insertSql);
+    const insertedId = result.recordset?.[0]?.id ?? null;
+    const inserted = insertedId ? await getRawRecord(pool, def, insertedId) : null;
+
+    await writeAudit(pool, def.table, 'INSERT', req.user, null, inserted);
+    await runAfterCreate(req.params.resource, pool, inserted, data);
+
+    res.status(201).json(inserted);
   } catch (error) {
     next(error);
   }
 }
 
-export async function getResource(req, res, next) {
+// Actualizar registro genérico
+export async function updateResource(req, res, next) {
   try {
     const def = getResourceOrThrow(req.params.resource);
+    const id = Number(req.params.id);
     const pool = await getPool();
-    const request = pool.request().input('id', sql.Int, Number(req.params.id));
-    const conditions = [`base.[${def.id}] = @id`];
-    if (isCliente(req.user)) {
-      const clientFilter = clientFilterCondition(req.params.resource);
-      if (!clientFilter) return res.status(403).json({ message: 'El rol Cliente no puede ver este recurso.' });
-      request.input('auth_cliente', sql.Int, Number(req.user?.id_cliente || 0));
-      conditions.push(clientFilter);
-    }
-    const selectSafe = stripTrailingOrderBy(def.select);
-    const result = await request.query(`SELECT * FROM (${selectSafe}) base ${buildWhere(conditions)}`);
-    if (!result.recordset[0]) return res.status(404).json({ message: 'Registro no encontrado' });
-    res.json(result.recordset[0]);
+
+    const existing = await getRawRecord(pool, def, id);
+    if (!existing) return res.status(404).json({ message: 'Registro no encontrado' });
+
+    const data = await preprocessBody(req.params.resource, req.body || {}, 'update', pool);
+    const keys = Object.keys(data);
+    if (!keys.length) return res.status(400).json({ message: 'Sin datos para actualizar.' });
+
+    const request = addAuditInputs(pool.request(), req.user).input('id', sql.Int, id);
+    const sets = keys.map(k => { request.input(k, sql.VarChar(sql.MAX), data[k]); return `[${k}] = @${k}`; }).join(', ');
+
+    const updateSql = `${auditSql}
+UPDATE [${def.table}] SET ${sets} WHERE [${def.id}] = @id;
+SELECT TOP 1 * FROM [${def.table}] WHERE [${def.id}] = @id;`;
+
+    const result = await request.query(updateSql);
+    const updated = result.recordset?.[0] ?? null;
+
+    await writeAudit(pool, def.table, 'UPDATE', req.user, existing, updated);
+    await runAfterUpdate(req.params.resource, pool, id, data);
+
+    res.json(updated);
+  } catch (error) {
+    next(error);
+  }
+}
+
+// Eliminar (borrado genérico). Usa cascadeDelete para tipos complejos si aplica.
+export async function deleteResource(req, res, next) {
+  try {
+    const def = getResourceOrThrow(req.params.resource);
+    const id = Number(req.params.id);
+    const pool = await getPool();
+
+    const existing = await getRawRecord(pool, def, id);
+    if (!existing) return res.status(404).json({ message: 'Registro no encontrado' });
+
+    // Ejecuta borrado en cascada (incluye borrado del registro principal por defecto)
+    await cascadeDelete(pool, req.params.resource, id, req.user);
+
+    await writeAudit(pool, def.table, 'DELETE', req.user, existing, null);
+
+    res.json({ message: 'Eliminado' });
   } catch (error) {
     next(error);
   }
