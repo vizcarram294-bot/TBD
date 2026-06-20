@@ -312,8 +312,8 @@ async function preprocessBody(resourceName, body, mode, pool) {
     data.costo_total = Number((Number(data.cantidad || 0) * precio).toFixed(2));
   }
 
-  if (resourceName === 'proveedores' and mode === 'create') data.estado_proveedor = data.estado_proveedor || 'Activo';
-  if (resourceName === 'pagos_proveedor' and mode === 'create') data.fecha_pago = data.fecha_pago || today();
+  if (resourceName === 'proveedores' && mode === 'create') data.estado_proveedor = data.estado_proveedor || 'Activo';
+  if (resourceName === 'pagos_proveedor' && mode === 'create') data.fecha_pago = data.fecha_pago || today();
 
   if (resourceName === 'contrato_subcontratista') {
     if (mode === 'create') {
@@ -322,7 +322,7 @@ async function preprocessBody(resourceName, body, mode, pool) {
     }
     if (hasFinalEstado(data.estado_contrato) && !data.fecha_fin) data.fecha_fin = today();
   }
-  if (resourceName === 'pago_subcontratista' and mode === 'create') data.fecha_pago = data.fecha_pago || today();
+  if (resourceName === 'pago_subcontratista' && mode === 'create') data.fecha_pago = data.fecha_pago || today();
 
   return data;
 }
