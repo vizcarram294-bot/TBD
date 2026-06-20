@@ -34,7 +34,7 @@ export const modules = {
         text('telefono_empleado','Teléfono'), text('email_empleado','Correo'), text('ci_empleado','CI', { required: true }), area('direccion_empleado','Dirección'),
         date('fecha_nacimiento_empleado','Fecha de nacimiento', { placeholder: '2025-05-25', help: 'Formato: año-mes-día. Ejemplo: 2025-05-25' }),
         select('id_categoria_empleado','Categoría','id_categoria_empleado', { catalogManage: catEmpleado, required: true }),
-        select('id_cargo_actual','Cargo actual','id_cargo_actual', { help: 'Cargo que ocupa en la empresa.' }),
+        select('id_cargo_actual','Cargo actual','id_cargo', { help: 'Cargo que ocupa en la empresa.' }),
         // Fecha ingreso es NOT NULL en BD: enviar valor desde frontend
         autoDate('fecha_ingreso_empleado','Fecha de ingreso', { autoToday: true, required: true }),
         number('tarifa_hora_actual','Tarifa por hora actual', { help: 'Se actualiza automáticamente con el historial de pagos.' }),
