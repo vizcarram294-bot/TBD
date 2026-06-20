@@ -208,7 +208,7 @@ export default function ResourceTable({ config, permissions = [], user = null })
               <td>
                 <div className="row-actions">
                   {config.details?.map(d => <button key={d.label} className="btn btn-sm btn-view" onClick={() => showDetails(row, d)}><i className="ti ti-eye" />{d.label}</button>)}
-                  {config.paymentQR && <button className="btn btn-sm btn-ok" onClick={() => showQR(row)}><i className="ti ti-qrcode" />Pagar / QR</button>}
+                  {config.paymentQR && <button className="btn-pay-qr" onClick={() => showQR(row)}><i className="ti ti-qrcode" />Pagar / QR</button>}
                   {config.quickCreate && <button className="btn btn-sm btn-ok" onClick={() => setModal({ mode: 'quick', resource: config.quickCreate.resource, row: Object.fromEntries(Object.entries(row).filter(([k]) => k.startsWith('id_'))), fields: config.quickCreate.fields })}><i className="ti ti-plus" />{config.quickCreate.label}</button>}
                   {canEdit && <button className="btn btn-sm btn-edit" onClick={() => setModal({ mode: 'edit', row, fields: config.fields, resourceKey: apiKey, resourceId: apiId })}><i className="ti ti-edit" />Editar</button>}
                   {canDelete && <button className="btn btn-sm btn-danger" onClick={() => del(row)}><i className="ti ti-trash" />Eliminar</button>}
