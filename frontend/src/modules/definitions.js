@@ -8,6 +8,7 @@ const estadoContrato = ['Activo', 'Finalizado', 'Despedido', 'Suspendido'];
 const asistencia = ['Presente', 'Tardanza', 'Falta', 'Permiso', 'Licencia'];
 const estadoOrdenPedido = ['Pendiente', 'Recibido', 'Cancelado'];
 const estadoNomina = ['Borrador', 'Cerrada', 'Pagada'];
+const estadoAlerta = ['SIN_ALERTA', 'STOCK_BAJO', 'CRITICO'];
 
 const f = (name, extra = {}) => ({ name, label: extra.label || name.replace(/^id_/, '').replaceAll('_', ' '), ...extra });
 const select = (name, label, source, extra = {}) => f(name, { label, type: 'select', source, ...extra });
@@ -35,12 +36,11 @@ export const modules = {
         date('fecha_nacimiento_empleado','Fecha de nacimiento', { placeholder: '2025-05-25', help: 'Formato: año-mes-día. Ejemplo: 2025-05-25' }),
         select('id_categoria_empleado','Categoría','id_categoria_empleado', { catalogManage: catEmpleado, required: true }),
         select('id_cargo_actual','Cargo actual','id_cargo', { help: 'Cargo que ocupa en la empresa.' }),
-        // Fecha ingreso es NOT NULL en BD: enviar valor desde frontend
         autoDate('fecha_ingreso_empleado','Fecha de ingreso', { autoToday: true, required: true }),
         number('tarifa_hora_actual','Tarifa por hora actual', { help: 'Se actualiza automáticamente con el historial de pagos.' }),
         select('id_estado_empleado','Estado empleado','id_estado_empleado', { hideOnCreate: true, help: 'Al crear queda activo por defecto. Solo se cambia al editar.' })
       ], details: [{ label: 'Resumen empleado', path: id => `/empleados/${id}/resumen` }], quickCreate: { label: 'Registrar asistencia', resource: 'control_asistencia', fields: [text('ci_empleado','CI del empleado', { placeholder: 'Ej: 8564321' }), select('id_empleado','Empleado','id_empleado'), date('fecha_asistencia','Fecha'), staticSelect('estado','Estado',asistencia), area('observaciones','Observaciones')] } },
-       { key: 'empleado_tipo_pago_historial', title: 'Historial tipo de pago/tarifa', id: 'id_historial', fields: [
+      { key: 'empleado_tipo_pago_historial', title: 'Historial tipo de pago/tarifa', id: 'id_historial', fields: [
         select('id_empleado','Empleado','id_empleado'), select('id_tipo_pago','Tipo de pago','id_tipo_pago'), 
         number('tarifa_hora','Tarifa por hora'), number('salario_base','Salario base mensual', { help: 'Si aplica pago fijo.' }),
         date('fecha_inicio','Fecha inicio'), date('fecha_fin','Fecha fin', { help: 'Dejar vacío si es vigente.' }),
@@ -115,7 +115,6 @@ export const modules = {
         select('id_centro_costo','Centro de costo','id_centro_costo', { required: true }),
         select('id_fase_tipo','Fase proyecto actual','id_fase_tipo', { help: 'Fase actual o principal del proyecto.' }),
         area('ubicacion_proyecto','Ubicación del proyecto'),
-        // fecha_inicio_proyecto es NOT NULL en BD: enviar desde frontend
         autoDate('fecha_inicio_proyecto','Fecha inicio', { autoToday: true, required: true }),
         date('fecha_fin_proyecto','Fecha fin', { help: 'Se llena al cambiar estado a Finalizado.' }),
         staticSelect('prioridad_proyecto','Prioridad',prioridad, { required: true }),
@@ -134,7 +133,20 @@ export const modules = {
     title: 'Material e inventario', subtitle: 'Materiales, inventario, órdenes de pedido, asignación y movimientos', icon: 'ti-package', owner: 'Integrante 4',
     resources: [
       { key: 'materiales', title: 'Materiales', id: 'id_material', fields: [text('codigo_material','Código material', { disabled: true, help: 'Se genera automáticamente.' }), text('nombre_material','Nombre material', { required: true }), select('id_categoria_material','Categoría','id_categoria_material', { catalogManage: catMaterial }), text('unidad_medida','Unidad medida'), number('precio_unitario','Precio unitario'), area('descripcion_material','Descripción'), staticSelect('estado_registro','Estado',estadoRegistro)] },
-      { key: 'inventario_material', title: 'Inventario material', id: 'id_inventario', fields: [select('id_material','Material','id_material'), select('id_almacen','Almacén','id_almacen'), number('stock_actual_material','Cantidad disponible', { required: true }), number('stock_minimo_material','Cantidad mínima para reabastecer'), number('stock_maximo_material','Cantidad máxima'), number('punto_reorden_material','Punto de reorden'), area('observacion','Observación')] },      { key: 'orden_pedido', title: 'Órdenes de pedido', id: 'id_orden', fields: [select('id_proveedor','Proveedor','id_proveedor', { required: true }), select('id_material','Material','id_material', { required: true }), number('cantidad_pedida','Cantidad pedida', { required: true }), number('precio_unitario','Precio unitario', { required: true }), number('total_pedido','Total pedido', { disabled: true, computedSum: ['cantidad_pedida','precio_unitario'], help: 'Se calcula automáticamente.' }), date('fecha_pedido','Fecha pedido', { autoToday: true }), staticSelect('estado_pedido','Estado',estadoOrdenPedido)] },
+      { key: 'inventario_material', title: 'Inventario material', id: 'id_inventario', fields: [
+        select('id_material','Material','id_material', { required: true }), 
+        select('id_almacen','Almacén','id_almacen', { required: true }), 
+        number('stock_actual_material','Stock actual', { required: true }), 
+        number('stock_minimo_material','Stock mínimo', { required: true }), 
+        number('stock_maximo_material','Stock máximo', { required: true }), 
+        number('punto_reorden_material','Punto de reorden'), 
+        autoDate('fecha_actualizacion','Última actualización', { autoToday: true }), 
+        area('observacion','Observación'), 
+        staticSelect('estado_alerta','Estado de alerta', estadoAlerta), 
+        select('id_proveedor','Proveedor','id_proveedor', { help: 'Proveedor preferido para reabastecimiento' }), 
+        number('cantidad_ingresada','Cantidad ingresada', { help: 'Últimas unidades ingresadas' })
+      ] },
+      { key: 'orden_pedido', title: 'Órdenes de pedido', id: 'id_orden_pedido', fields: [text('numero_orden','Número orden', { disabled: true, help: 'Se genera automáticamente.' }), select('id_proveedor','Proveedor','id_proveedor', { required: true }), date('fecha_orden','Fecha orden'), staticSelect('estado_orden','Estado',estadoOrdenPedido), area('descripcion_orden','Descripción')] },
       { key: 'movimiento_inventario', title: 'Movimientos inventario / historial', id: 'id_movimiento', fields: [], readonly: true, lockMessage: 'Se registra automáticamente cuando se asigna material o se actualiza inventario.' },
       { key: 'costos_material', title: 'Historial costos material', id: 'id_costo_material', fields: [], readonly: true, lockMessage: 'Se registra automáticamente al cambiar el precio de un material.' },
     ]
@@ -154,7 +166,6 @@ export const modules = {
       { key: 'subcontratistas', title: 'Subcontratistas', id: 'id_subcontratista', fields: [
         text('nombre_subcontratista','Nombre subcontratista'), text('representante','Representante'), text('ci_subcontratista','CI'), text('telefono_subcontratista','Teléfono'), text('email_subcontratista','Correo'),
         area('direccion_subcontratista','Dirección'),
-        // Añadido: especialidad para evitar inserts con NULL
         text('especialidad','Especialidad', { required: true, help: 'Ej: Electricidad, Albañilería, Fontanería' })
       ] },
       { key: 'contrato_subcontratista', title: 'Contratos subcontratistas', id: 'id_contrato_sub', fields: [select('id_subcontratista','Subcontratista','id_subcontratista'), select('id_proyecto','Proyecto','id_proyecto'), date('fecha_inicio','Fecha inicio'), date('fecha_fin','Fecha fin'), number('monto_contrato','Monto contrato'), area('descripcion','Descripción')] },
