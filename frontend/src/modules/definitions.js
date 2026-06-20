@@ -161,7 +161,7 @@ export const modules = {
         // Añadido: especialidad para evitar inserts con NULL
         text('especialidad','Especialidad', { required: true, help: 'Ej: Electricidad, Albañilería, Fontanería' })
       ] },
-      { key: 'contrato_subcontratista', title: 'Contratos subcontratistas', id: 'id_contrato_sub', fields: [select('id_subcontratista','Subcontratista','id_subcontratista'), select('id_proyecto','Proyecto','id_proyecto'), number('monto_contratado','Monto contratado', { required: true }), date('fecha_inicio','Fecha inicio', { required: true }), date('fecha_fin','Fecha fin'), staticSelect('estado_contrato','Estado contrato',estadoContrato, { required: true }), area('descripcion_trabajo','Descripción trabajo') ] },
+      { key: 'contrato_subcontratista', title: 'Contratos subcontratistas', id: 'id_contrato_sub', fields: [select('id_subcontratista','Subcontratista','id_subcontratista'), select('id_proyecto','Proyecto','id_proyecto'), number('monto_contratado','Monto contratado', { required: true }), date('fecha_inicio','Fecha inicio', { required: true }), date('fecha_fin','Fecha fin'), staticSelect('estado_contrato','Estado contrato',estadoContrato, { required: true })] },
       { key: 'pago_subcontratista', title: 'Pagos subcontratistas', id: 'id_pago_sub', fields: [select('id_contrato_sub','Contrato','id_contrato_sub'), date('fecha_pago','Fecha pago'), number('monto_pago','Monto')] }
     ]
   },
