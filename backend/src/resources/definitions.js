@@ -119,20 +119,25 @@ export const resources = {
     columns: [],
     search: ['id_mano_obra','proyecto','empleado','nombre_fase','fecha_trabajo','costo_total'],
   },
-  nomina_resumen_mensual: {
-    table: 'nomina_resumen_mensual', id: 'id_nomina_resumen',
-    select: `SELECT nrm.id_nomina_resumen, CONCAT(e.nombre_empleado, ' ', e.apellido_empleado) AS empleado,
-      nrm.mes_year, nrm.dias_calendario, nrm.dias_trabajados, nrm.dias_falta,
-      nrm.horas_totales_trabajadas, nrm.horas_extra_totales, nrm.minutos_retrasados_total,
-      c.nombre_cargo, nrm.tarifa_hora, nrm.monto_horas_trabajadas, nrm.monto_horas_extra,
-      nrm.descuento_retrasados, nrm.subtotal, nrm.descuentos_otros, nrm.monto_neto,
-      nrm.estado_nomina, nrm.id_empleado, nrm.id_cargo
-      FROM nomina_resumen_mensual nrm
-      LEFT JOIN empleados e ON e.id_empleado = nrm.id_empleado
-      LEFT JOIN cargo_empleado c ON c.id_cargo = nrm.id_cargo`,
-    columns: ['id_empleado','mes_year','dias_trabajados','dias_falta','horas_totales_trabajadas','horas_extra_totales','minutos_retrasados_total','tarifa_hora','descuentos_otros','estado_nomina'],
-    search: ['id_nomina_resumen','empleado','mes_year','estado_nomina','dias_trabajados'],
-  },
+    nomina_resumen_mensual: {
+  table: 'nomina_resumen_mensual', id: 'id_nomina_resumen',
+  select: `SELECT nrm.id_nomina_resumen, CONCAT(e.nombre_empleado, ' ', e.apellido_empleado) AS empleado,
+    nrm.id_periodo_pago, nrm.mes_year, nrm.dias_calendario, nrm.dias_trabajados, nrm.dias_falta,
+    nrm.horas_totales_trabajadas, nrm.horas_extra_totales, nrm.minutos_retrasados_total,
+    nrm.id_cargo, c.nombre_cargo, nrm.tarifa_hora, nrm.salario_base, nrm.monto_horas_trabajadas, nrm.monto_horas_extra,
+    nrm.descuento_retrasados, nrm.subtotal, nrm.descuentos_otros,
+    nrm.estado_nomina, nrm.fecha_calculo, nrm.observaciones, nrm.id_empleado
+    FROM nomina_resumen_mensual nrm
+    LEFT JOIN empleados e ON e.id_empleado = nrm.id_empleado
+    LEFT JOIN cargo_empleado c ON c.id_cargo = nrm.id_cargo`,
+  columns: [
+    'id_empleado','id_periodo_pago','mes_year','dias_calendario','dias_trabajados','dias_falta',
+    'horas_totales_trabajadas','horas_extra_totales','minutos_retrasados_total',
+    'id_cargo','tarifa_hora','salario_base','monto_horas_trabajadas','monto_horas_extra',
+    'descuento_retrasados','descuentos_otros','subtotal','estado_nomina','fecha_calculo','observaciones'
+  ],
+  search: ['id_nomina_resumen','empleado','mes_year','estado_nomina','dias_trabajados'],
+},
   descuentos_empleado: {
     table: 'descuentos_empleado', id: 'id_descuento',
     select: `SELECT de.id_descuento, CONCAT(e.nombre_empleado, ' ', e.apellido_empleado) AS empleado,

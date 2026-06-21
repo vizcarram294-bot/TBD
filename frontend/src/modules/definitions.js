@@ -87,41 +87,38 @@ export const modules = {
         date('fecha_resumen','Fecha'),
         number('minutos_tardanza','Minutos tardanza')
       ] },
-
-      // Mano de obra por proyecto (read-only)
-      { key: 'proyecto_mano_obra', title: 'Mano de obra por proyecto / historial', id: 'id_mano_obra', fields: [], readonly: true, lockMessage: 'Historial automático de mano de obra asignada a proyectos.' },
-
+      //{ key: 'proyecto_mano_obra', title: 'Mano de obra por proyecto / historial', id: 'id_mano_obra', fields: [], readonly: true, lockMessage: 'Historial automático de mano de obra asignada a proyectos.' },
       // Nómina resumen mensual (visto como readonly, muestra cálculos)
       { 
-        key: 'nomina_resumen_mensual',
-        title: 'Nómina resumen mensual (Cálculos)',
-        id: 'id_nomina_resumen',
-        fields: [
-          select('id_empleado','Empleado','id_empleado'),
-          text('mes_year','Mes/Año'),
-          number('dias_calendario','Días calendario', { disabled: true }),
-          number('dias_trabajados','Días trabajados', { disabled: true }),
-          number('dias_falta','Días de falta', { disabled: true }),
-          number('horas_totales_trabajadas','Horas totales trabajadas', { disabled: true }),
-          number('horas_extra_totales','Horas extra totales', { disabled: true }),
-          number('minutos_retrasados_total','Minutos retrasados total', { disabled: true }),
-          select('id_cargo','Cargo','id_cargo'),
-          text('nombre_cargo','Nombre cargo', { disabled: true }),
-          number('tarifa_hora','Tarifa hora', { disabled: true }),
-          number('salario_base','Salario base', { disabled: true }),
-          number('monto_horas_trabajadas','Monto horas trabajadas', { disabled: true }),
-          number('monto_horas_extra','Monto horas extra', { disabled: true }),
-          number('descuento_retrasados','Descuento por retrasados'),
-          number('descuentos_otros','Otros descuentos'),
-          number('subtotal','Subtotal', { disabled: true }),
-          number('monto_neto','Monto neto', { disabled: true }),
-          staticSelect('estado_nomina','Estado nómina', estadoNomina),
-          autoDate('fecha_calculo','Fecha cálculo', { disabled: true }),
-          area('observaciones','Observaciones')
-        ],
-        readonly: true,
-        lockMessage: 'Se calcula automáticamente. Modificar solo los descuentos adicionales.'
-      },
+  key: 'nomina_resumen_mensual',
+  title: 'Nómina resumen mensual (Cálculos)',
+  id: 'id_nomina_resumen',
+  fields: [
+    select('id_empleado','Empleado','id_empleado'),
+    select('id_periodo_pago','Periodo pago','id_periodo_pago'),
+    text('mes_year','Mes/Año'),
+    number('dias_calendario','Días calendario', { disabled: true }),
+    number('dias_trabajados','Días trabajados', { disabled: true }),
+    number('dias_falta','Días de falta', { disabled: true }),
+    number('horas_totales_trabajadas','Horas totales trabajadas', { disabled: true }),
+    number('horas_extra_totales','Horas extra totales', { disabled: true }),
+    number('minutos_retrasados_total','Minutos retrasados total', { disabled: true }),
+    select('id_cargo','Cargo','id_cargo'),
+    text('nombre_cargo','Nombre cargo', { disabled: true }),
+    number('tarifa_hora','Tarifa hora', { disabled: true }),
+    number('salario_base','Salario base', { disabled: true }),
+    number('monto_horas_trabajadas','Monto horas trabajadas', { disabled: true }),
+    number('monto_horas_extra','Monto horas extra', { disabled: true }),
+    number('descuento_retrasados','Descuento por retrasados'),
+    number('descuentos_otros','Otros descuentos'),
+    number('subtotal','Subtotal', { disabled: true }),
+    staticSelect('estado_nomina','Estado nómina', estadoNomina),
+    autoDate('fecha_calculo','Fecha cálculo', { disabled: true }),
+    area('observaciones','Observaciones')
+  ],
+  readonly: true,
+  lockMessage: 'Se calcula automáticamente. Modificar solo los descuentos adicionales.'
+},
 
       // Descuentos aplicado a empleado
       { key: 'descuentos_empleado', title: 'Descuentos aplicados', id: 'id_descuento', fields: [
