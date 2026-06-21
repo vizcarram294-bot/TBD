@@ -146,7 +146,7 @@ async function getIdEstadoEmpleadoActivo(pool) {
 
 async function getIdEstadoProyectoInicial(pool) {
   // Selecciona el estado inicial del proyecto preferentemente por coincidencias con 'inicio' o 'aprob'.
-  const result = await pool.request().query(`SELECT TOP 1 id_estado_proyecto FROM estados_proyecto WHERE LOWER(nombre_estado) LIKE '%inicio%' OR LOWER(nombre_estado) LIKE '%aprob%' ORDER BY id_estado_proyecto`);
+  const result = await pool.request().query(`SELECT TOP 1 id_estado_proyecto FROM estados_proyecto WHERE LOWER(nombre_estado) LIKE '%inicio%' OR LOWER(nombre_estado) LIKE '%aprob%' ORDER BY id_es[...]
   return result.recordset[0]?.id_estado_proyecto ?? null;
 }
 
@@ -229,12 +229,18 @@ async function preprocessBody(resourceName, body, mode, pool) {
   }
 
   if (resourceName === 'control_asistencia') {
-    if (!data.id_empleado && data.ci_empleado) data.id_empleado = await getEmpleadoByCi(pool, data.ci_empleado);
-    if (!data.id_empleado) {
-      const err = new Error('No se encontró empleado con ese CI.');
-      err.status = 400;
-      throw err;
+    // En updates desde la interfaz puede que el cliente solo mande hora_salida.
+    // Para no bloquear la actualización, si no viene id_empleado en body pero estamos en modo 'update',
+    // asumimos que el registro ya existe y no necesitamos validar id_empleado aquí (esa validación se hace al crear).
+    if (mode === 'create') {
+      if (!data.id_empleado && data.ci_empleado) data.id_empleado = await getEmpleadoByCi(pool, data.ci_empleado);
+      if (!data.id_empleado) {
+        const err = new Error('No se encontró empleado con ese CI.');
+        err.status = 400;
+        throw err;
+      }
     }
+
     data.fecha = data.fecha || today();
     data.hora_entrada = data.hora_entrada || new Date().toTimeString().slice(0, 8);
     data.estado_asistencia = data.estado_asistencia || 'Presente';
@@ -541,7 +547,19 @@ export async function updateResource(req, res, next) {
     const existing = await getRawRecord(pool, def, id);
     if (!existing) return res.status(404).json({ message: 'Registro no encontrado' });
 
-    const data = await preprocessBody(req.params.resource, req.body || {}, 'update', pool);
+    // Si es control_asistencia y el frontend solo envía hora_salida, evitar que preprocessBody falle
+    // porque en modo update no necesitamos validar id_empleado de nuevo.
+    const bodyToProcess = Object.assign({}, req.body || {});
+    if (req.params.resource === 'control_asistencia' && !bodyToProcess.id_empleado) {
+      // Pasamos id_empleado para que preprocessBody pueda calcular horas si hace falta,
+      // pero no lo mantendremos si no venía originalmente para no forzar un UPDATE sobre esa columna.
+      bodyToProcess.id_empleado = existing.id_empleado;
+    }
+
+    const data = await preprocessBody(req.params.resource, bodyToProcess, 'update', pool);
+
+    // Si el cliente no envió id_empleado originalmente, no lo actualizamos (evitamos sobrescribir con el mismo valor innecesariamente)
+    if (!('id_empleado' in (req.body || {}))) delete data.id_empleado;
 
     if (Array.isArray(def.columns) && def.columns.length) {
       for (const key of Object.keys(data)) {
@@ -593,3 +611,4 @@ export async function deleteResource(req, res, next) {
     next(error);
   }
 }
+
