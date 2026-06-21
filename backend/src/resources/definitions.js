@@ -143,16 +143,24 @@ export const resources = {
     search: ['id_descuento','empleado','tipo_descuento','fecha_descuento','monto_descuento'],
   },
   nomina_pagos: {
-    table: 'nomina_pagos', id: 'id_nomina', allowUpdate: false, allowDelete: false,
-    select: `SELECT n.id_nomina, CONCAT(e.nombre_empleado, ' ', e.apellido_empleado, ' — CI ', e.ci_empleado) AS empleado,
-      pp.tipo_periodo, n.fecha_pago, n.periodo_inicio, n.periodo_fin, n.dias_trabajados,
-      n.horas_trabajadas, n.horas_extra, n.monto_pago, n.id_empleado, n.id_periodo_pago
-      FROM nomina_pagos n
-      LEFT JOIN empleados e ON e.id_empleado = n.id_empleado
-      LEFT JOIN periodo_pago pp ON pp.id_periodo_pago = n.id_periodo_pago`,
-    columns: ['id_empleado','id_periodo_pago','fecha_pago','periodo_inicio','periodo_fin','dias_trabajados','horas_trabajadas','horas_extra','monto_pago'],
-    search: ['id_nomina','empleado','tipo_periodo','fecha_pago','monto_pago'],
-  },
+  table: 'nomina_pagos',
+  id: 'id_nomina',
+  // Si quieres permitir editar/eliminar desde la UI pon true (o quitalo si por defecto tu sistema permite)
+  allowUpdate: true,
+  allowDelete: true,
+  select: `SELECT n.id_nomina,
+                  CONCAT(e.nombre_empleado, ' ', e.apellido_empleado, ' — CI ', e.ci_empleado) AS empleado,
+                  pp.tipo_periodo,
+                  n.fecha_pago, n.periodo_inicio, n.periodo_fin,
+                  n.dias_trabajados, n.horas_trabajadas, n.horas_extra,
+                  n.monto_pago, n.estado_pago,
+                  n.id_empleado, n.id_periodo_pago
+           FROM nomina_pagos n
+           LEFT JOIN empleados e ON e.id_empleado = n.id_empleado
+           LEFT JOIN periodo_pago pp ON pp.id_periodo_pago = n.id_periodo_pago`,
+  columns: ['id_empleado','id_periodo_pago','fecha_pago','periodo_inicio','periodo_fin','dias_trabajados','horas_trabajadas','horas_extra','monto_pago','estado_pago'],
+  search: ['id_nomina','empleado','tipo_periodo','fecha_pago','monto_pago','estado_pago'],
+},
 
   // ───────────────────────────── Clientes y finanzas ──────────────────────
   clientes: {

@@ -1,3 +1,4 @@
+// frontend/src/components/Login.jsx
 import { useState } from 'react';
 import { clientRegister, login } from '../api.js';
 
@@ -20,7 +21,7 @@ export default function Login({ onLogin }) {
       localStorage.setItem('construsys_permissions', JSON.stringify(data.permissions || []));
       onLogin({ user: data.user, permissions: data.permissions || [] });
     } catch (err) {
-      setError(err.message);
+      setError(err.message || String(err));
     } finally {
       setLoading(false);
     }
@@ -38,7 +39,7 @@ export default function Login({ onLogin }) {
       setForm({ username: '', password: '' });
       setRegister({ nro_documento_cliente: '', username: '', password: '' });
     } catch (err) {
-      setError(err.message);
+      setError(err.message || String(err));
     } finally {
       setLoading(false);
     }
@@ -58,14 +59,29 @@ export default function Login({ onLogin }) {
       {ok && <div className="alert success">{ok}</div>}
 
       {mode === 'login' ? <>
-        <div className="field" style={{ marginBottom: 10 }}><label>Usuario</label><input autoComplete="off" value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} /></div>
-        <div className="field" style={{ marginBottom: 14 }}><label>Contraseña</label><input type="password" autoComplete="new-password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} /></div>
+        <div className="field" style={{ marginBottom: 10 }}>
+          <label>Usuario</label>
+          <input autoComplete="off" value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} />
+        </div>
+        <div className="field" style={{ marginBottom: 14 }}>
+          <label>Contraseña</label>
+          <input type="password" autoComplete="new-password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
+        </div>
         <button className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>{loading ? 'Ingresando...' : 'Entrar'}</button>
         <button type="button" className="btn btn-soft" style={{ width: '100%', marginTop: 10 }} onClick={() => { setError(''); setOk(''); setMode('register'); }}>Crear cuenta cliente</button>
       </> : <>
-        <div className="field" style={{ marginBottom: 10 }}><label>Número de documento del cliente</label><input autoComplete="off" placeholder="CI/NIT registrado en clientes" value={register.nro_documento_cliente} onChange={e => setRegister({ ...register, nro_documento_cliente: e.target.value })} /></div>
-        <div className="field" style={{ marginBottom: 10 }}><label>Usuario</label><input autoComplete="off" value={register.username} onChange={e => setRegister({ ...register, username: e.target.value })} /></div>
-        <div className="field" style={{ marginBottom: 14 }}><label>Contraseña</label><input type="password" autoComplete="new-password" value={register.password} onChange={e => setRegister({ ...register, password: e.target.value })} /></div>
+        <div className="field" style={{ marginBottom: 10 }}>
+          <label>Número de documento del cliente</label>
+          <input autoComplete="off" placeholder="CI/NIT registrado en clientes" value={register.nro_documento_cliente} onChange={e => setRegister({ ...register, nro_documento_cliente: e.target.value })} />
+        </div>
+        <div className="field" style={{ marginBottom: 10 }}>
+          <label>Usuario</label>
+          <input autoComplete="off" value={register.username} onChange={e => setRegister({ ...register, username: e.target.value })} />
+        </div>
+        <div className="field" style={{ marginBottom: 14 }}>
+          <label>Contraseña</label>
+          <input type="password" autoComplete="new-password" value={register.password} onChange={e => setRegister({ ...register, password: e.target.value })} />
+        </div>
         <button className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>{loading ? 'Creando...' : 'Crear cuenta'}</button>
         <button type="button" className="btn btn-soft" style={{ width: '100%', marginTop: 10 }} onClick={() => { setError(''); setOk(''); setMode('login'); }}>Volver al login</button>
       </>}
