@@ -110,7 +110,6 @@ export const modules = {
     number('monto_horas_trabajadas','Monto horas trabajadas', { disabled: true }),
     number('monto_horas_extra','Monto horas extra', { disabled: true }),
     number('descuento_retrasados','Descuento por retrasados'),
-    number('descuentos_otros','Otros descuentos'),
     number('subtotal','Subtotal', { disabled: true }),
     staticSelect('estado_nomina','Estado nómina', estadoNomina),
     autoDate('fecha_calculo','Fecha cálculo', { disabled: true }),
@@ -119,7 +118,6 @@ export const modules = {
   readonly: true,
   lockMessage: 'Se calcula automáticamente. Modificar solo los descuentos adicionales.'
 },
-
       // Descuentos aplicado a empleado
       { key: 'descuentos_empleado', title: 'Descuentos aplicados', id: 'id_descuento', fields: [
         select('id_empleado','Empleado','id_empleado'),
