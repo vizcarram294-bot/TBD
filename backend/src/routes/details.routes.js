@@ -52,6 +52,31 @@ router.get('/empleados/:id/resumen', async (req, res, next) => {
   } catch (error) { next(error); }
 });
 
+// Nuevo endpoint: devolver los pagos de nómina con las mismas columnas que la tabla nomina_pagos
+router.get('/empleados/:id/nomina_pagos', async (req, res, next) => {
+  try {
+    const pool = await getPool();
+    const id = Number(req.params.id);
+    const result = await pool.request().input('id', sql.Int, id).query(`
+      SELECT n.id_nomina,
+             n.id_empleado,
+             n.id_periodo_pago,
+             n.fecha_pago,
+             n.periodo_inicio,
+             n.periodo_fin,
+             n.dias_trabajados,
+             n.horas_trabajadas,
+             n.horas_extra,
+             n.monto_pago,
+             n.estado_pago
+      FROM nomina_pagos n
+      WHERE n.id_empleado = @id
+      ORDER BY n.fecha_pago DESC
+    `);
+    res.json(result.recordset);
+  } catch (error) { next(error); }
+});
+
 router.get('/clientes/:id/finanzas', async (req, res, next) => {
   try {
     const pool = await getPool();
