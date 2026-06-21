@@ -145,8 +145,7 @@ async function getIdEstadoEmpleadoActivo(pool) {
 }
 
 async function getIdEstadoProyectoInicial(pool) {
-  // Selecciona el estado inicial del proyecto preferentemente por coincidencias con 'inicio' o 'aprob'.
-  const result = await pool.request().query(`SELECT TOP 1 id_estado_proyecto FROM estados_proyecto WHERE LOWER(nombre_estado) LIKE '%inicio%' OR LOWER(nombre_estado) LIKE '%aprob%' ORDER BY id_es[...]
+  const result = await pool.request().query(`SELECT TOP 1 id_estado_proyecto FROM estados_proyecto WHERE LOWER(nombre_estado) LIKE '%inicio%' OR LOWER(nombre_estado) LIKE '%aprob%' ORDER BY id_estado_proyecto`);
   return result.recordset[0]?.id_estado_proyecto ?? null;
 }
 

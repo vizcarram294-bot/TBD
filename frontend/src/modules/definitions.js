@@ -48,13 +48,7 @@ export const modules = {
       ], readonly: true, lockMessage: 'Se registra automáticamente al cambiar tipo de pago.' },
       { key: 'contrato_empleado', title: 'Contratos de empleado', id: 'id_contrato', fields: [select('id_empleado','Empleado','id_empleado'), select('id_tipo_contrato','Tipo contrato','id_tipo_contrato'), select('id_tipo_pago','Tipo de pago','id_tipo_pago'), number('tarifa','Tarifa'), date('fecha_inicio','Fecha inicio'), date('fecha_fin','Fecha fin', { help: 'Si aplica.' }), staticSelect('estado_contrato','Estado',estadoContrato)] },
       { key: 'control_asistencia', title: 'Asistencia de trabajadores', id: 'id_asistencia', fields: [text('ci_empleado','CI del empleado', { placeholder: 'Ej: 8564321' }), select('id_empleado','Empleado','id_empleado'), date('fecha_asistencia','Fecha'), staticSelect('estado','Estado',asistencia), area('observaciones','Observaciones')] },
-      { key: 'asistencia_diaria_resumen', title: 'Resumen diario de asistencia', id: 'id_resumen', fields: [
-        select('id_empleado','Empleado','id_empleado'), date('fecha_resumen','Fecha'), 
-        number('minutos_retrasados','Minutos retrasados'), number('horas_trabajadas','Horas trabajadas'),
-        number('horas_extra','Horas extra'), staticSelect('estado_asistencia','Estado',asistencia),
-        number('descuento_aplicado','Descuento aplicado', { disabled: true, help: 'Calculado automáticamente: -8 por hora, -4 por media hora.' }),
-        area('observaciones','Observaciones')
-      ] },
+      { key: 'asistencia_diaria_resumen', title: 'Resumen diario de asistencia', id: 'id_resumen', fields: [select('id_empleado','Empleado','id_empleado'), date('fecha_resumen','Fecha'), number('minutos_retrasados','Minutos retrasados'), number('horas_trabajadas','Horas trabajadas'), number('horas_extra','Horas extra'), staticSelect('estado_asistencia','Estado',asistencia), number('descuento_aplicado','Descuento aplicado'), number('tarifa_dia','Tarifa por hora'), area('observaciones','Observaciones')] },
       { key: 'proyecto_mano_obra', title: 'Mano de obra por proyecto / historial', id: 'id_mano_obra', fields: [], readonly: true, lockMessage: 'Historial automático de mano de obra asignada a proyectos.' },
       { key: 'nomina_resumen_mensual', title: 'Nómina resumen mensual (Cálculos)', id: 'id_nomina_resumen', fields: [
         select('id_empleado','Empleado','id_empleado'), text('mes_year','Mes y Año (YYYY-MM)', { placeholder: '2026-06' }),
