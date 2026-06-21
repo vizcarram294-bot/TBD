@@ -26,6 +26,35 @@ function isDateOnlyColumn(col) {
   return /(fecha_|_fecha|fecha$)/.test(String(col || '')) && !/(intento|creacion|modificacion|login)/.test(String(col || ''));
 }
 
+function isTimeColumn(col) {
+  // Columnas con 'hora' o 'time' deben mostrarse como hora legible
+  return /hora|time/i.test(String(col || ''));
+}
+
+function formatTimeText(value) {
+  if (!value && value !== 0) return '';
+  const raw = String(value);
+  // 1) Si ya tiene formato HH:MM:SS al inicio
+  const m1 = raw.match(/^(\d{2}:\d{2}:\d{2})/);
+  if (m1) return m1[1];
+  // 2) Si es una ISO con T (p.ej. 1970-01-01T08:00:00.000Z) extraer la parte de hora sin conversión
+  const m2 = raw.match(/T(\d{2}:\d{2}:\d{2})/);
+  if (m2) return m2[1];
+  // 3) Si hay cualquier grupo HH:MM en la cadena
+  const m3 = raw.match(/(\d{2}:\d{2})/);
+  if (m3) return m3[1] + ':00';
+  // 4) Fallback: intentar parsear como Date y devolver hora local (con padding)
+  const d = new Date(raw);
+  if (!Number.isNaN(d.getTime())) {
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    const ss = String(d.getSeconds()).padStart(2, '0');
+    return `${hh}:${mm}:${ss}`;
+  }
+  // 5) Si no se puede, devolver raw truncado
+  return raw.slice(0, 8);
+}
+
 function formatDateText(value, isDateOnly = false) {
   if (!value) return '';
   const raw = String(value);
@@ -79,6 +108,11 @@ function compactText(value) {
 }
 
 function formatCell(col, value) {
+  // Si es columna de hora, mostrar solo HH:MM:SS legible
+  if (isTimeColumn(col)) {
+    return <span className="cell-text" title={String(value)}>{formatTimeText(value)}</span>;
+  }
+
   const isDateOnly = isDateOnlyColumn(col);
   const text = isDateColumn(col) ? formatDateText(value, isDateOnly) : compactText(value);
   const isLong = String(col).startsWith('datos_') || String(text).length > 70;
@@ -150,11 +184,16 @@ export default function ResourceTable({ config, permissions = [], user = null })
   }
 
   // Marca la hora de salida con la hora actual y recarga la tabla.
+  // Enviamos también id_empleado o ci_empleado si están disponibles para evitar error en backend.
   async function markSalida(row) {
     if (!confirm(`Marcar salida ahora para ${row.empleado || row.ci_empleado || ''}?`)) return;
     const time = new Date().toTimeString().slice(0, 8); // HH:MM:SS
     try {
-      await update(apiKey, row[apiId], { hora_salida: time });
+      const body = { hora_salida: time };
+      if (row.id_empleado) body.id_empleado = row.id_empleado;
+      else if (row.ci_empleado) body.ci_empleado = row.ci_empleado;
+
+      await update(apiKey, row[apiId], body);
       await load();
     } catch (err) {
       alert(err.message);
@@ -195,58 +234,4 @@ export default function ResourceTable({ config, permissions = [], user = null })
         <div className="field search"><input placeholder="Filtrar letra por letra, por cualquier columna..." value={search} onChange={e => setSearch(e.target.value)} /></div>
         <button className="btn btn-soft" onClick={() => load()}><i className="ti ti-search" />Buscar</button>
         <button className="btn btn-soft" onClick={clearFilter}><i className="ti ti-eraser" />Limpiar filtro</button>
-        <button className="btn btn-soft" onClick={() => load()}><i className="ti ti-refresh" />Refrescar</button>
-      </div>
-      <div className="toolbar-right">
-        <button className="btn btn-soft" onClick={() => copyToClipboard(rows, cols)} title="Copiar datos al portapapeles"><i className="ti ti-copy" />Copiar</button>
-        <button className="btn btn-soft" onClick={() => exportToExcel(rows, config.key, cols)}><i className="ti ti-file-spreadsheet" />Excel</button>
-        <button className="btn btn-soft" onClick={() => exportToPDF(rows, config.title, cols)}><i className="ti ti-file-pdf" />PDF</button>
-        {canAdd && <button className="btn btn-primary" onClick={() => setModal({ mode: 'create', row: null, fields: config.fields })}><i className="ti ti-plus" />Añadir</button>}
-      </div>
-    </div>
-
-    {error && <div className="alert error">{error}</div>}
-    {loading ? <div className="empty">Cargando...</div> : <>
-      <div className="table-scroll-top" ref={topScrollRef} onScroll={syncFromTop}><div style={{ width: `${tableWidth}px` }} /></div>
-      <div className="tbl-wrap" ref={wrapRef} onScroll={syncFromBottom}>
-        <table className="tbl" ref={tableRef}>
-          <thead><tr>{cols.map(c => <th key={c}>{c}</th>)}<th>Acciones</th></tr></thead>
-          <tbody>
-            {!rows.length && <tr><td colSpan={cols.length + 1} className="empty">No hay registros</td></tr>}
-            {rows.map(row => <tr key={row[apiId]}>
-              {cols.map(c => <td key={c}>{formatCell(c, row[c])}</td>)}
-              <td>
-                <div className="row-actions">
-                  {config.details?.map(d => <button key={d.label} className="btn btn-sm btn-view" onClick={() => showDetails(row, d)}><i className="ti ti-eye" />{d.label}</button>)}
-                  {config.paymentQR && <button className="btn-pay-qr" onClick={() => showQR(row)}><i className="ti ti-qrcode" />Pagar / QR</button>}
-                  {config.quickCreate && <button className="btn btn-sm btn-ok" onClick={() => setModal({ mode: 'quick', resource: config.quickCreate.resource, row: Object.fromEntries(Object.entries(row).filter(([k]) => k.startsWith('id_'))), fields: config.quickCreate.fields })}><i className="ti ti-plus" />{config.quickCreate.label}</button>}
-
-                  {/* Nuevo: botón Marcar Salida para control_asistencia cuando no tenga hora_salida */}
-                  {apiKey === 'control_asistencia' && !row.hora_salida && canEdit && (
-                    <button className="btn btn-sm btn-ok" onClick={() => markSalida(row)}><i className="ti ti-arrow-right-circle" />Marcar Salida</button>
-                  )}
-
-                  {canEdit && <button className="btn btn-sm btn-edit" onClick={() => setModal({ mode: 'edit', row, fields: config.fields, resourceKey: apiKey, resourceId: apiId })}><i className="ti ti-edit" />Editar</button>}
-                  {canDelete && <button className="btn btn-sm btn-danger" onClick={() => del(row)}><i className="ti ti-trash" />Eliminar</button>}
-                </div>
-              </td>
-            </tr>)}
-          </tbody>
-        </table>
-      </div>
-  </>}
-
-    {modal && <ModalForm 
-      title={modal.mode === 'quick' ? config.quickCreate.label : (modal.row ? `Editar ${config.title}` : `Nuevo ${config.title}`)} 
-      fields={modal.fields || config.fields} 
-      initial={modal.row || {}}
-      mode={modal.mode === 'quick' ? 'create' : modal.mode}
-      resourceKey={modal.resourceKey || apiKey}
-      resourceId={modal.resourceId || apiId}
-      onClose={() => setModal(null)}
-      onSave={save}
-    />}
-    {detailModal && <DetailModal title={detailModal.title} data={detailModal.data} onClose={() => setDetailModal(null)} />}
-    {paymentModal && <PaymentQRModal payment={paymentModal} onClose={() => setPaymentModal(null)} />}
-  </div>;
-}
+        <button className="btn btn-soft" onClick={() => load()}><i className="ti ti-refresh`
