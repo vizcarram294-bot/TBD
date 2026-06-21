@@ -166,16 +166,16 @@ export const resources = {
     search: ['id_cliente','cliente','nro_documento_cliente','telefono_cliente','email_cliente','tipo_documento'],
   },
   cotizaciones: {
-    table: 'cotizaciones', id: 'id_cotizacion',
-    select: `SELECT co.id_cotizacion, CONCAT(c.nombre_cliente, ' ', ISNULL(c.apellido_cliente, '')) AS cliente,
-      co.id_cliente_cotizacion, co.presupuesto_cliente, co.ubicacion_obra, co.metros_cuadrados, co.numero_pisos, co.tiempo_estimado,
-      co.costo_estimado_materiales, co.costo_estimado_mano_obra, co.otros_costos_estimados, co.subtotal_estimado,
-      co.margen_ganancia, co.precio_final, co.fecha_cotizacion, co.estado_cotizacion, co.observaciones
-      FROM cotizaciones co
-      LEFT JOIN clientes c ON c.id_cliente = co.id_cliente_cotizacion`,
-    columns: ['presupuesto_cliente','id_cliente_cotizacion','ubicacion_obra','metros_cuadrados','numero_pisos','tiempo_estimado','costo_estimado_materiales','costo_estimado_mano_obra','otros_costos_estimados','margen_ganancia','precio_final','fecha_cotizacion','estado_cotizacion','observaciones'],
-    search: ['id_cotizacion','cliente','ubicacion_obra','estado_cotizacion','metros_cuadrados'],
-  },
+  table: 'cotizaciones', id: 'id_cotizacion',
+  select: `SELECT co.id_cotizacion, CONCAT(c.nombre_cliente, ' ', ISNULL(c.apellido_cliente, '')) AS cliente,
+    co.id_cliente_cotizacion, co.id_cliente_cotizacion AS id_cliente, co.presupuesto_cliente, co.ubicacion_obra, co.metros_cuadrados, co.numero_pisos, co.tiempo_estimado,
+    co.costo_estimado_materiales, co.costo_estimado_mano_obra, co.otros_costos_estimados, co.subtotal_estimado,
+    co.margen_ganancia, co.precio_final, co.fecha_cotizacion, co.estado_cotizacion, co.observaciones
+    FROM cotizaciones co
+    LEFT JOIN clientes c ON c.id_cliente = co.id_cliente_cotizacion`,
+  columns: ['presupuesto_cliente','id_cliente_cotizacion','ubicacion_obra','metros_cuadrados','numero_pisos','tiempo_estimado','costo_estimado_materiales','costo_estimado_mano_obra','otros_costos_estimados','margen_ganancia','precio_final','fecha_cotizacion','estado_cotizacion','observaciones'],
+  search: ['id_cotizacion','cliente','ubicacion_obra','estado_cotizacion','metros_cuadrados'],
+},
   pagos_cliente: {
   table: 'pagos_cliente', id: 'id_pago_cliente',
   select: `SELECT pc.id_pago_cliente, CONCAT(c.nombre_cliente, ' ', ISNULL(c.apellido_cliente, '')) AS cliente,
@@ -189,14 +189,14 @@ export const resources = {
   search: ['id_pago_cliente','cliente','proyecto','estado_pago','metodo_pago','monto','fecha_pago','estado'],
 },
   plan_pagos: {
-    table: 'plan_pagos', id: 'id_plan_pago',
-    select: `SELECT pp.id_plan_pago, p.nombre_proyecto AS proyecto, ISNULL(fp.nombre_fase, '-') AS nombre_fase, pp.numero_cuota, pp.monto_esperado, pp.fecha_limite, pp.estado_pago, pp.porcentaje_asociado, pp.id_proyecto, pp.id_fase
-      FROM plan_pagos pp
-      LEFT JOIN proyectos p ON p.id_proyecto = pp.id_proyecto
-      LEFT JOIN fases_proyecto fp ON fp.id_fase = pp.id_fase`,
-    columns: ['id_proyecto','numero_cuota','monto_esperado','fecha_limite','estado_pago','porcentaje_asociado','id_fase'],
-    search: ['id_plan_pago','proyecto','nombre_fase','estado_pago','numero_cuota','monto_esperado'],
-  },
+  table: 'plan_pagos', id: 'id_plan_pago',
+  select: `SELECT pp.id_plan_pago, p.nombre_proyecto AS proyecto, ISNULL(fp.nombre_fase, '-') AS nombre_fase, pp.numero_cuota, pp.monto_esperado, pp.fecha_limite, pp.estado_pago, pp.porcentaje_asociado, pp.id_proyecto, pp.id_fase, p.id_cliente
+    FROM plan_pagos pp
+    LEFT JOIN proyectos p ON p.id_proyecto = pp.id_proyecto
+    LEFT JOIN fases_proyecto fp ON fp.id_fase = pp.id_fase`,
+  columns: ['id_proyecto','numero_cuota','monto_esperado','fecha_limite','estado_pago','porcentaje_asociado','id_fase'],
+  search: ['id_plan_pago','proyecto','nombre_fase','estado_pago','numero_cuota','monto_esperado'],
+},
   liquidaciones: {
     table: 'liquidaciones', id: 'id_liquidacion',
     select: `SELECT l.id_liquidacion, p.nombre_proyecto AS proyecto, CONCAT(c.nombre_cliente, ' ', ISNULL(c.apellido_cliente, '')) AS cliente,
@@ -229,12 +229,12 @@ export const resources = {
     search: ['id_proyecto','codigo_proyecto','nombre_proyecto','cliente','estado_proyecto','centro_costo','prioridad_proyecto','estado_registro','fase_actual'],
   },
   fases_proyecto: {
-    table: 'fases_proyecto', id: 'id_fase', allowCreate: false, allowUpdate: false, allowDelete: false,
-    select: `SELECT fp.id_fase, p.nombre_proyecto AS proyecto, fp.nombre_fase, fp.fecha_inicio_fase, fp.fecha_fin_fase, fp.progreso, fp.porcentaje_asignado, fp.costo_estimado, fp.costo_real, fp.id_proyecto
-      FROM fases_proyecto fp LEFT JOIN proyectos p ON p.id_proyecto = fp.id_proyecto`,
-    columns: [],
-    search: ['id_fase','proyecto','nombre_fase','fecha_inicio_fase','fecha_fin_fase'],
-  },
+  table: 'fases_proyecto', id: 'id_fase', allowCreate: false, allowUpdate: false, allowDelete: false,
+  select: `SELECT fp.id_fase, p.nombre_proyecto AS proyecto, fp.nombre_fase, fp.fecha_inicio_fase, fp.fecha_fin_fase, fp.progreso, fp.porcentaje_asignado, fp.costo_estimado, fp.costo_real, fp.id_proyecto, p.id_cliente
+    FROM fases_proyecto fp LEFT JOIN proyectos p ON p.id_proyecto = fp.id_proyecto`,
+  columns: [],
+  search: ['id_fase','proyecto','nombre_fase','fecha_inicio_fase','fecha_fin_fase'],
+},
   avance_proyecto: {
     table: 'avance_proyecto', id: 'id_avance', allowCreate: false, allowUpdate: false, allowDelete: false,
     select: `SELECT a.id_avance, p.nombre_proyecto AS proyecto, a.fecha, a.porcentaje_avance, a.observaciones, a.id_proyecto, p.id_cliente

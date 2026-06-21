@@ -126,9 +126,9 @@ export const modules = {
       { key: 'avance_proyecto', title: 'Avance proyecto / historial', id: 'id_avance', readonly: true, fields: [], lockMessage: 'Historial automático del avance del proyecto. Solo se visualiza y filtra.' },
       { key: 'flujo_estado_proyecto', title: 'Flujo estado proyecto / historial', id: 'id_flujo', readonly: true, fields: [], lockMessage: 'Registro automático cada vez que cambia el estado del proyecto.' },
       { key: 'proyecto_empleado', title: 'Asignar empleados a proyectos', id: 'id_proyecto_empleado', fields: [select('id_proyecto','Proyecto','id_proyecto'), select('id_empleado','Empleado','id_empleado'), text('rol_en_proyecto','Rol en el proyecto', { required: true, placeholder: 'Ej: Supervisor, Albañil, Electricista' }), date('fecha_asignacion','Fecha asignación')] },
-      { key: 'proyecto_material', title: 'Asignación material a proyecto', id: 'id_proyecto_material', fields: [select('id_proyecto','Proyecto','id_proyecto', { required: true }), select('id_material','Material','id_material', { required: true }), select('id_fase','Fase','id_fase', { help: 'Opcional' }), number('cantidad','Cantidad', { required: true }), date('fecha_uso','Fecha de uso', { autoToday: true }), number('costo_unitario','Costo unitario', { disabled: true, help: 'Se toma del precio del material.' }), number('costo_total','Costo total', { disabled: true, help: 'Se calcula automáticamente.' })] },    ]
+      { key: 'proyecto_material', title: 'Asignación material a proyecto', id: 'id_proyecto_material', fields: [select('id_proyecto','Proyecto','id_proyecto', { required: true }), select('id_material','Material','id_material', { required: true }), select('id_fase','Fase','id_fase', { dependsOn: 'id_proyecto', disabled: true, help: 'Se asigna automáticamente según la fase actual del proyecto.' }), number('cantidad','Cantidad', { required: true }), date('fecha_uso','Fecha de uso', { autoToday: true }), number('costo_unitario','Costo unitario', { disabled: true, help: 'Se toma del precio del material.' }), number('costo_total','Costo total', { disabled: true, help: 'Se calcula automáticamente.' })] },
+    ]
   },
-
   inventario: {
     title: 'Material e inventario', subtitle: 'Materiales, inventario, órdenes de pedido, asignación y movimientos', icon: 'ti-package', owner: 'Integrante 4',
     resources: [
@@ -167,9 +167,8 @@ export const modules = {
         area('direccion_subcontratista','Dirección'),
         text('especialidad','Especialidad', { required: true, help: 'Ej: Electricidad, Albañilería, Fontanería' })
       ] },
-      { key: 'contrato_subcontratista', title: 'Contratos subcontratistas', id: 'id_contrato_sub', fields: [select('id_subcontratista','Subcontratista','id_subcontratista'), select('id_proyecto','Proyecto','id_proyecto'), date('fecha_inicio','Fecha inicio'), date('fecha_fin','Fecha fin'), number('monto_contrato','Monto contrato'), area('descripcion','Descripción')] },
-      { key: 'pago_subcontratista', title: 'Pagos subcontratistas', id: 'id_pago_sub', fields: [select('id_contrato_sub','Contrato','id_contrato_sub'), date('fecha_pago','Fecha pago'), number('monto','Monto pago'), area('observaciones','Observaciones')] },
-    ]
+      { key: 'contrato_subcontratista', title: 'Contratos subcontratistas', id: 'id_contrato_sub', fields: [select('id_subcontratista','Subcontratista','id_subcontratista', { required: true }), select('id_proyecto','Proyecto','id_proyecto', { required: true }), number('monto_contratado','Monto contratado', { required: true }), date('fecha_inicio','Fecha inicio', { required: true }), date('fecha_fin','Fecha fin'), staticSelect('estado_contrato','Estado contrato',estadoContrato, { required: true }), area('descripcion_trabajo','Descripción del trabajo')] },
+      { key: 'pago_subcontratista', title: 'Pagos subcontratistas', id: 'id_pago_sub', fields: [select('id_contrato_sub','Contrato','id_contrato_sub', { required: true }), number('monto','Monto pago', { required: true }), date('fecha_pago','Fecha pago', { autoToday: true }), staticSelect('estado_pago','Estado de pago',['Pendiente','Pagado'])] },    ]
   },
 
   catalogos: {
