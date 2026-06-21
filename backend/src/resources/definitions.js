@@ -324,17 +324,16 @@ export const resources = {
     search: ['id_proveedor','nombre_proveedor','telefono_proveedor','categoria','estado_proveedor'],
   },
   pagos_proveedor: {
-    table: 'pagos_proveedor', id: 'id_pago_proveedor',
-    select: `SELECT pp.id_pago_proveedor, pr.nombre_proveedor AS proveedor, ISNULL(p.nombre_proyecto, '-') AS proyecto,
-      ep.estado_pago_proyecto AS estado_pago, pp.monto, pp.fecha_pago, pp.monto_pagado,
-      pp.id_proveedor, pp.id_proyecto, pp.id_estado_pago, pp.id_orden_compra
-      FROM pagos_proveedor pp
-      LEFT JOIN proveedores pr ON pr.id_proveedor = pp.id_proveedor
-      LEFT JOIN proyectos p ON p.id_proyecto = pp.id_proyecto
-      LEFT JOIN estado_pago_proyecto ep ON ep.id_estado_pago = pp.id_estado_pago`,
-    columns: ['id_proveedor','id_proyecto','id_estado_pago','monto','fecha_pago','monto_pagado','id_orden_compra'],
-    search: ['id_pago_proveedor','proveedor','proyecto','estado_pago','monto','fecha_pago'],
-  },
+  table: 'pagos_proveedor', id: 'id_pago_proveedor',
+  select: `SELECT pp.id_pago_proveedor, pr.nombre_proveedor AS proveedor,
+    ep.estado_pago_proyecto AS estado_pago, pp.monto, pp.fecha_pago, pp.monto_pagado,
+    pp.id_proveedor, pp.id_estado_pago, pp.id_orden
+    FROM pagos_proveedor pp
+    LEFT JOIN proveedores pr ON pr.id_proveedor = pp.id_proveedor
+    LEFT JOIN estado_pago_proyecto ep ON ep.id_estado_pago = pp.id_estado_pago`,
+  columns: ['id_proveedor','id_estado_pago','monto','fecha_pago','monto_pagado','id_orden'],
+  search: ['id_pago_proveedor','proveedor','estado_pago','monto','fecha_pago'],
+},
 
   // ───────────────────────────── Subcontratistas ────────────────────────
   subcontratistas: {
