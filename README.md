@@ -2,6 +2,132 @@
 
 Proyecto React + Node/Express conectado a SQL Server para el taller de Base de Datos.
 
+## 🚀 Pasos para abrir y ejecutar el proyecto
+
+### Paso 1: Clonar el repositorio
+
+```bash
+git clone https://github.com/vizcarram294-bot/TBD.git
+cd TBD
+```
+
+### Paso 2: Configurar la Base de Datos en SQL Server
+
+1. Abre **SQL Server Management Studio (SSMS)**
+2. Conéctate a tu instancia de SQL Server
+3. Abre el archivo de script SQL:
+   ```
+   database/database.sql
+   ```
+4. Ejecuta el script completo (Ctrl + A → F5)
+   - Esto creará la base de datos `constructora` con todas las tablas, relaciones y datos iniciales
+
+**Nota:** Si ya existe la base de datos `constructora`, el script la eliminará y creará una nueva. Ten cuidado si tienes datos importantes.
+
+### Paso 3: Configurar el Backend
+
+1. Abre una terminal y navega a la carpeta backend:
+   ```bash
+   cd backend
+   ```
+
+2. Instala la librería **xlsx** (necesaria para importar/exportar datos desde Excel):
+   ```bash
+   npm install xlsx
+   ```
+
+3. Copia el archivo de ejemplo de variables de entorno:
+   ```bash
+   copy .env.example .env
+   ```
+
+4. Edita el archivo `.env` con tus credenciales de SQL Server:
+   ```env
+   PORT=3001
+   DB_USER=sa
+   DB_PASSWORD=TU_PASSWORD
+   DB_SERVER=localhost
+   DB_DATABASE=constructora
+   DB_PORT=1433
+   DB_ENCRYPT=false
+   DB_TRUST_CERT=true
+   JWT_SECRET=construsys_secret
+   ```
+
+   **Para SQL Server Express, usa:**
+   ```env
+   DB_SERVER=localhost\\SQLEXPRESS
+   ```
+
+5. Instala todas las dependencias:
+   ```bash
+   npm install
+   ```
+
+6. Inicia el servidor backend:
+   ```bash
+   npm run dev
+   ```
+
+   El backend estará disponible en `http://localhost:3001`
+
+### Paso 4: Configurar el Frontend
+
+1. Abre otra terminal y navega a la carpeta frontend:
+   ```bash
+   cd frontend
+   ```
+
+2. Copia el archivo de ejemplo de variables de entorno:
+   ```bash
+   copy .env.example .env
+   ```
+
+3. Instala las dependencias:
+   ```bash
+   npm install
+   ```
+
+4. Inicia el servidor frontend:
+   ```bash
+   npm run dev
+   ```
+
+5. Abre tu navegador en:
+   ```
+   http://localhost:5173
+   ```
+
+### Paso 5: Acceder a la aplicación
+
+Usa las credenciales de demostración:
+- **Usuario:** `ricardo.mendoza`
+- **Contraseña:** `ricardo123`
+
+---
+
+## 📊 Importar datos desde Excel
+
+La aplicación permite **exportar e importar datos completos de la base de datos** usando archivos Excel:
+
+### Exportar datos a Excel:
+1. Dentro de la aplicación, busca la opción de descargar/exportar datos
+2. Se generará un archivo Excel con toda la estructura de la base de datos
+
+### Importar datos desde Excel:
+1. **Coloca el archivo Excel** (`database.xlsx` o similar) en la carpeta `backend/`
+2. El backend **detectará automáticamente el archivo** al iniciar
+3. Los datos se **cargarán automáticamente en tu base de datos**
+
+**Esto es útil para:**
+- Transferir datos entre diferentes bases de datos
+- Respaldar y restaurar datos rápidamente
+- Compartir datos de forma portable
+
+**Nota:** La librería `xlsx` debe estar instalada (`npm install xlsx`) para que esta funcionalidad funcione.
+
+---
+
 ## Qué se corrigió en esta versión
 
 - Dashboard rediseñado, sin la tabla de partes asignadas.
@@ -21,77 +147,7 @@ Proyecto React + Node/Express conectado a SQL Server para el taller de Base de D
 - Contrato subcontratista pone fecha_fin automática al cambiar a Finalizado.
 - Usuarios registran rol en `usuario_rol` y login bloquea por más de 3 intentos fallidos.
 
-## Orden de ejecución en SQL Server Management Studio
-
-1. Crear la base si no existe:
-
-```sql
-CREATE DATABASE constructora;
-GO
-```
-
-2. Ejecutar:
-
-```txt
-database/00_script_original_constructora.sql
-database/01_vistas_y_procedimientos_api.sql
-database/03_correcciones_finales_interfaz.sql
-```
-
-El archivo `02_automatizaciones_y_vistas_finales.sql` queda solo por compatibilidad.
-
-## Backend
-
-```bash
-cd backend
-copy .env.example .env
-mpn install xlsx
-npm install
-npm run dev
-```
-
-Edita `.env` con tus datos de SQL Server:
-
-```env
-PORT=3001
-DB_USER=sa
-DB_PASSWORD=TU_PASSWORD
-DB_SERVER=localhost
-DB_DATABASE=constructora
-DB_PORT=1433
-DB_ENCRYPT=false
-DB_TRUST_CERT=true
-JWT_SECRET=construsys_secret
-```
-
-Para SQL Express, normalmente:
-
-```env
-DB_SERVER=localhost\\SQLEXPRESS
-```
-
-## Frontend
-
-```bash
-cd frontend
-copy .env.example .env
-npm install
-npm run dev
-```
-
-Abre:
-
-```txt
-http://localhost:5173
-```
-
-Login demo:
-
-```txt
-Usuario: admin
-Contraseña: admin
-```
-
+---
 
 ## Corrección aplicada posterior
 - Se corrigió el detalle/historial de proyecto para usar `proyecto_material.cantidad` en vez de `cantidad_usada`.
@@ -106,32 +162,13 @@ Si aparece el error:
 
 usa esta versión V3. El backend ahora inserta con `OUTPUT ... INTO @insertedIds`, que sí permite usar triggers en SQL Server.
 
-Ejecuta también:
-
-```sql
-database/04_fix_output_triggers_auditoria.sql
-```
-
-No es necesario cambiar la tabla `usuarios` a una vista. Si ya hicieron ese cambio manual, lo más estable es volver a trabajar con la tabla real `usuarios`, porque `usuario_rol` e intentos de login dependen de `id_usuario`.
-
+No es necesario cambiar la tabla `usuarios` a una vista. Si ya hicieron ese cambio manual, lo más estable es volver a trabajar con la tabla real `usuarios`, porque `usuario_rol` e intentos de login quedan más claros.
 
 ## Actualización V4 Seguridad y usuarios
 
-Ejecuta también en SSMS:
-
-```txt
-database/05_seguridad_login_permisos_auditoria.sql
-```
-
-Esta versión obliga a iniciar sesión al abrir la app, aplica permisos por rol en frontend y backend, registra auditoría automática y valida que usuarios se creen solo para empleados activos o clientes existentes.
+Esta versión obliga a iniciar sesión al abrir la app, aplica permisos por rol en frontend y backend, registra auditoría automática y valida que usuarios se creen solo para empleados activos.
 
 ## Actualización V5 Dashboard + auditoría
-
-Ejecuta también en SSMS:
-
-```txt
-database/06_dashboard_y_auditoria_backend.sql
-```
 
 Cambios de esta versión:
 
@@ -140,21 +177,7 @@ Cambios de esta versión:
 - La auditoría ya no depende solo de triggers: el backend registra manualmente INSERT, UPDATE y DELETE en la tabla `auditoria`.
 - Los triggers quedan como respaldo para cambios hechos directamente desde SQL Server Management Studio, sin duplicar logs cuando la acción viene desde la interfaz.
 
-Prueba rápida:
-
-```sql
-SELECT TOP 20 * FROM auditoria ORDER BY fecha DESC, id_auditoria DESC;
-```
-
 ## Actualización V6 Cliente + tipo documento + auditoría
-
-Ejecuta también en SSMS:
-
-```txt
-database/07_fix_cliente_tipo_documento_auditoria.sql
-database/08_eliminar_tareas_fase.sql
-database/09_auditor_presentacion_limpia.sql
-```
 
 Cambios de esta versión:
 
@@ -164,33 +187,11 @@ Cambios de esta versión:
 - Se cargan tipos de documento base (`CI`, `NIT`, `Pasaporte`, `Otro`) para que el desplegable de cliente no salga vacío.
 - Se refuerzan triggers de auditoría y el backend registra logs cuando se añade, edita o elimina desde la interfaz.
 
-Orden final recomendado de scripts:
-
-```txt
-database/00_script_original_constructora.sql
-database/01_vistas_y_procedimientos_api.sql
-database/03_correcciones_finales_interfaz.sql
-database/04_fix_output_triggers_auditoria.sql
-database/05_seguridad_login_permisos_auditoria.sql
-database/06_dashboard_y_auditoria_backend.sql
-database/07_fix_cliente_tipo_documento_auditoria.sql
-database/08_eliminar_tareas_fase.sql
-database/09_auditor_presentacion_limpia.sql
-```
-
-
 ## Cambio V8
 
-Se retiró el módulo/botón `Tareas fase` porque la tabla `tareas_fase` ya no existe en la base de datos. Ejecutar `database/08_eliminar_tareas_fase.sql` si anteriormente se creó esa tabla.
-
+Se retiró el módulo/botón `Tareas fase` porque la tabla `tareas_fase` ya no existe en la base de datos.
 
 ## Cambio V9 Auditoría y presentación limpia
-
-Ejecuta también en SSMS:
-
-```txt
-database/09_auditor_presentacion_limpia.sql
-```
 
 Cambios de esta versión:
 
@@ -200,4 +201,4 @@ Cambios de esta versión:
 - Se corrigió el formato de fecha/hora en tablas como auditoría e intentos de login.
 - Se quitaron textos de demostración del login.
 - Se quitaron etiquetas de integrantes/responsables de los módulos.
-- Se limpió el encabezado superior para que no diga “interfaz basada en el HTML original”.
+- Se limpió el encabezado superior para que no diga "interfaz basada en el HTML original".
