@@ -1,16 +1,34 @@
+import React from 'react';
+
 function TableMini({ title, rows }) {
-  const columns = rows?.[0] ? Object.keys(rows[0]).slice(0, 6) : [];
+  const columns = rows?.[0] ? Object.keys(rows[0]) : [];
   return <div className="detail-block">
-    <h4>{title}</h4>
-    {!rows?.length ? <div className="empty">Sin registros</div> : <table className="tbl" style={{ minWidth: 520 }}>
+    <h4 style={{ textTransform: 'capitalize' }}>{String(title).replaceAll('_', ' ')}</h4>
+    {!rows?.length ? <div className="empty">Sin registros</div> : <div className="table-responsive"><table className="tbl" style={{ minWidth: 520 }}>
       <thead><tr>{columns.map(c => <th key={c}>{c}</th>)}</tr></thead>
-      <tbody>{rows.slice(0, 20).map((r, i) => <tr key={i}>{columns.map(c => <td key={c}>{String(r[c] ?? '')}</td>)}</tr>)}</tbody>
-    </table>}
+      <tbody>{rows.map((r, i) => <tr key={i}>{columns.map(c => <td key={c}>{formatCell(c, r[c])}</td>)}</tr>)}</tbody>
+    </table></div>}
   </div>
 }
 
+function formatCell(col, value) {
+  if (value === null || value === undefined) return '';
+  const key = String(col).toLowerCase();
+  if (/fecha|fecha_|_fecha|ultimo_login|fecha_intento/i.test(key)) {
+    const s = String(value);
+    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+  }
+  if (/(monto|precio|subtotal|total)/i.test(key)) {
+    const n = Number(value);
+    if (!Number.isNaN(n)) return n.toFixed(2);
+  }
+  if (typeof value === 'boolean') return value ? 'Sí' : 'No';
+  return String(value);
+}
+
 export default function DetailModal({ title, data, onClose }) {
-  const entries = Array.isArray(data) ? { registros: data } : data || {};
+  const entries = Array.isArray(data) ? { registros: data } : (data || {});
   return <div className="modal-backdrop">
     <div className="modal" style={{ maxWidth: 1100 }}>
       <div className="modal-head">
