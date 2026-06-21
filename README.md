@@ -45,6 +45,7 @@ El archivo `02_automatizaciones_y_vistas_finales.sql` queda solo por compatibili
 ```bash
 cd backend
 copy .env.example .env
+mpn install xlsx
 npm install
 npm run dev
 ```
