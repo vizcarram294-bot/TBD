@@ -234,7 +234,7 @@ export default function ResourceTable({ config, permissions = [], user = null })
           </tbody>
         </table>
       </div>
-    >]}
+  </>}
 
     {modal && <ModalForm 
       title={modal.mode === 'quick' ? config.quickCreate.label : (modal.row ? `Editar ${config.title}` : `Nuevo ${config.title}`)} 

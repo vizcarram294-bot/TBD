@@ -65,7 +65,7 @@ export const resources = {
     columns: [],
     search: ['id_historial','empleado','tipo_pago','tarifa_hora','fecha_inicio','fecha_fin'],
   },
-  contrato_empleado: {
+     contrato_empleado: {
     table: 'contrato_empleado', id: 'id_contrato',
     select: `SELECT ce.id_contrato, CONCAT(e.nombre_empleado, ' ', e.apellido_empleado, ' — CI ', e.ci_empleado) AS empleado,
       tc.tipo_contrato, tpt.tipo_pago, ce.tarifa, ce.fecha_inicio, ce.fecha_fin, ce.estado_contrato,
@@ -91,11 +91,12 @@ export const resources = {
     table: 'asistencia_diaria_resumen', id: 'id_resumen',
     select: `SELECT adr.id_resumen, CONCAT(e.nombre_empleado, ' ', e.apellido_empleado) AS empleado,
       adr.fecha_resumen, adr.minutos_retrasados, adr.horas_trabajadas, adr.horas_extra,
-      adr.estado_asistencia, adr.descuento_aplicado, adr.observaciones, adr.id_empleado
+      adr.estado_asistencia, adr.descuento_aplicado, adr.observaciones,
+      adr.tarifa_dia, adr.created_at, adr.updated_at, adr.id_empleado
       FROM asistencia_diaria_resumen adr
       LEFT JOIN empleados e ON e.id_empleado = adr.id_empleado`,
-    columns: ['id_empleado','fecha_resumen','minutos_retrasados','horas_trabajadas','horas_extra','estado_asistencia','observaciones'],
-    search: ['id_resumen','empleado','fecha_resumen','estado_asistencia','minutos_retrasados'],
+    columns: ['id_empleado','fecha_resumen','minutos_retrasados','horas_trabajadas','horas_extra','estado_asistencia','observaciones','tarifa_dia'],
+    search: ['id_resumen','empleado','fecha_resumen','estado_asistencia','minutos_retrasados','tarifa_dia'],
   },
   proyecto_empleado: {
     table: 'proyecto_empleado', id: 'id_proyecto_empleado',
